@@ -11,3 +11,4 @@ out/
 !.dev.vars.example
 .test-worker/
 artifacts/
+.secrets/

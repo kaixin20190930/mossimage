@@ -11,6 +11,10 @@ type Summary = {
   daily: Array<Metric & { day: string }>;
   breakdowns: Array<Metric & { properties: Record<string, string> }>;
   generationFrequency: Array<{ bucket: string; visitors: number }>;
+  dailySnapshots: Array<{ day: string; generatedAt: string; metrics: Metric[] }>;
+  gscDaily: Array<{ day: string; clicks: number; impressions: number; position: number }>;
+  gscTopQueries: Array<{ query: string; clicks: number; impressions: number; position: number }>;
+  gscLastSync: string | null;
 };
 
 const labels: Record<string, string> = {
@@ -99,6 +103,15 @@ export function AnalyticsDashboard() {
       <section className="analytics-funnel">
         <h2>Successful generations per person</h2>
         <div>{data.generationFrequency.map(row => <article key={row.bucket}><span>{row.bucket} successful {row.bucket === '1' ? 'generation' : 'generations'}</span><strong>{row.visitors}</strong><small>anonymous browser IDs</small></article>)}</div>
+      </section>
+      <section className="analytics-breakdowns">
+        <h2>Search Console</h2>
+        <p className="analytics-note">Final Google Search data, refreshed daily with a three-day reporting delay. Last sync: {data.gscLastSync ? new Date(data.gscLastSync).toLocaleString() : 'waiting for first scheduled sync'}.</p>
+        {data.gscTopQueries.length > 0 ? <table><thead><tr><th>Query</th><th>Clicks</th><th>Impressions</th><th>Average position</th></tr></thead><tbody>{data.gscTopQueries.map(row => <tr key={row.query}><td>{row.query || '(anonymous query)'}</td><td>{row.clicks}</td><td>{row.impressions}</td><td>{row.position.toFixed(1)}</td></tr>)}</tbody></table> : <p className="analytics-note">No Search Console rows have been stored yet.</p>}
+      </section>
+      <section className="analytics-breakdowns">
+        <h2>Daily snapshots</h2>
+        <p className="analytics-note">Immutable daily funnel summaries stored in the existing Durable Object. {data.dailySnapshots.length} snapshot{data.dailySnapshots.length === 1 ? '' : 's'} in this window.</p>
       </section>
       {data.breakdowns.length > 0 && <section className="analytics-breakdowns"><h2>Breakdowns</h2><table><thead><tr><th>Event</th><th>Properties</th><th>Events</th><th>People</th></tr></thead><tbody>{data.breakdowns.map((row, index) => <tr key={`${row.event}-${index}`}><td>{labels[row.event] || row.event}</td><td>{Object.entries(row.properties).map(([key, value]) => `${key}: ${value}`).join(' · ')}</td><td>{row.events}</td><td>{row.visitors}</td></tr>)}</tbody></table></section>}
     </>}

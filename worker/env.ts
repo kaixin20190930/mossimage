@@ -12,6 +12,8 @@ export interface Env {
   EMAIL?: SendEmail;
   AUTH_EMAIL_FROM?: string;
   ADMIN_EMAIL?: string;
+  GSC_SERVICE_ACCOUNT_JSON?: string;
+  GSC_SITE_URL?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   STRIPE_PRICE_CREDIT_PACK_30?: string;

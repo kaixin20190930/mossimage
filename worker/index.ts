@@ -6,6 +6,7 @@ import { account, logout, requestCode, verifyCode, authConfigured, paymentsConfi
 import { createCheckout, createPortal, stripeWebhook } from './billing';
 import { analyticsSummary, recordAnalytics } from './analytics';
 import { dashboard, deleteAccount, deleteGeneration, exportAccount, exportedGenerationImage, generationImage } from './dashboard';
+import { runDailyReporting } from './gsc';
 export { GenerationState } from './state';
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -90,5 +91,8 @@ export default {
       });
     }
     return assetResponse;
+  },
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(runDailyReporting(env, controller.scheduledTime));
   },
 } satisfies ExportedHandler<Env>;

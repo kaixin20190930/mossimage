@@ -142,6 +142,20 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
         {event:'plan_click',events:1,visitors:1,properties:{plan:'monthly'}},
       ]);
       assert.deepEqual(summary.generationFrequency,[]);
+      assert.deepEqual(summary.dailySnapshots,[]);
+      assert.deepEqual(summary.gscDaily,[]);
+      assert.deepEqual(summary.gscTopQueries,[]);
+      assert.equal(summary.gscLastSync,null);
+      await call('/analytics/snapshot',{day:'2026-10-25',generatedAt:now+1000});
+      await call('/gsc/replace',{startDate:'2026-10-24',endDate:'2026-10-25',fetchedAt:now+2000,rows:[
+        {day:'2026-10-25',query:'moss image generator',page:'https://mossimage.run/',clicks:2,impressions:20,ctr:0.1,position:5.5},
+      ]});
+      const persisted=await call('/analytics/summary',{days:30});
+      assert.equal(persisted.dailySnapshots.length,1);
+      assert.deepEqual(persisted.dailySnapshots[0].metrics,summary.totals);
+      assert.deepEqual(persisted.gscDaily,[{day:'2026-10-25',clicks:2,impressions:20,position:5.5}]);
+      assert.deepEqual(persisted.gscTopQueries,[{query:'moss image generator',clicks:2,impressions:20,position:5.5}]);
+      assert.equal(persisted.gscLastSync,new Date(now+2000).toISOString());
     });
     await t.test('account credits, refunds and billing grants are atomic and idempotent',async()=>{
       const call=ledger('account-credit-ledger');

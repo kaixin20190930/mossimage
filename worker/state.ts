@@ -84,6 +84,16 @@ export class GenerationState extends DurableObject<Env> {
       PRIMARY KEY(day, event, visitor_hash, dimension)
     )`);
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS analytics_events_day ON analytics_events(day)');
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS daily_funnel_snapshots (
+      day TEXT PRIMARY KEY, generated_at INTEGER NOT NULL, payload TEXT NOT NULL
+    )`);
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS gsc_search_rows (
+      day TEXT NOT NULL, query TEXT NOT NULL, page TEXT NOT NULL,
+      clicks REAL NOT NULL, impressions REAL NOT NULL, ctr REAL NOT NULL,
+      position REAL NOT NULL, fetched_at INTEGER NOT NULL,
+      PRIMARY KEY(day, query, page)
+    )`);
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS gsc_search_rows_day ON gsc_search_rows(day)');
   }
 
   protected now() { return Date.now(); }
@@ -186,7 +196,71 @@ export class GenerationState extends DurableObject<Env> {
              GROUP BY visitor_hash
            ) GROUP BY bucket ORDER BY MIN(generations)`, since,
         ).toArray();
-        return { days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns, generationFrequency };
+        const dailySnapshots = this.ctx.storage.sql.exec<{ day: string; generated_at: number; payload: string }>(
+          'SELECT day, generated_at, payload FROM daily_funnel_snapshots WHERE day >= ? ORDER BY day DESC', since,
+        ).toArray().map(row => ({ day: row.day, generatedAt: new Date(row.generated_at).toISOString(), ...JSON.parse(row.payload) }));
+        const gscDaily = this.ctx.storage.sql.exec<{ day: string; clicks: number; impressions: number; position: number }>(
+          `SELECT day, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
+                  CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE 0 END AS position
+           FROM gsc_search_rows WHERE day >= ? GROUP BY day ORDER BY day DESC`, since,
+        ).toArray();
+        const gscTopQueries = this.ctx.storage.sql.exec<{ query: string; clicks: number; impressions: number; position: number }>(
+          `SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
+                  CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE 0 END AS position
+           FROM gsc_search_rows WHERE day >= ? GROUP BY query ORDER BY clicks DESC, impressions DESC LIMIT 20`, since,
+        ).toArray();
+        const gscLastSync = this.ctx.storage.sql.exec<{ fetched_at: number | null }>(
+          'SELECT MAX(fetched_at) AS fetched_at FROM gsc_search_rows',
+        ).one().fetched_at;
+        return {
+          days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns,
+          generationFrequency, dailySnapshots, gscDaily, gscTopQueries,
+          gscLastSync: gscLastSync ? new Date(gscLastSync).toISOString() : null,
+        };
+      }
+
+      if (path === '/analytics/snapshot') {
+        const day = String(input.day || '');
+        const generatedAt = Number(input.generatedAt || now);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(generatedAt)) throw new Error('Invalid snapshot');
+        const metrics = this.ctx.storage.sql.exec<{ event: string; events: number; visitors: number }>(
+          `SELECT event, SUM(count) AS events, COUNT(DISTINCT visitor_hash) AS visitors
+           FROM analytics_events WHERE day = ? GROUP BY event ORDER BY event`, day,
+        ).toArray();
+        const sources = this.ctx.storage.sql.exec<{ dimension: string; events: number; visitors: number }>(
+          `SELECT dimension, SUM(count) AS events, COUNT(DISTINCT visitor_hash) AS visitors
+           FROM analytics_events WHERE day = ? AND event = 'generate_success' GROUP BY dimension ORDER BY events DESC`, day,
+        ).toArray().map(row => ({ ...row, properties: JSON.parse(row.dimension), dimension: undefined }));
+        const payload = JSON.stringify({ metrics, generationSources: sources });
+        this.ctx.storage.sql.exec(
+          `INSERT INTO daily_funnel_snapshots(day, generated_at, payload) VALUES (?, ?, ?)
+           ON CONFLICT(day) DO UPDATE SET generated_at = excluded.generated_at, payload = excluded.payload`,
+          day, generatedAt, payload,
+        );
+        return { ok: true, day };
+      }
+
+      if (path === '/gsc/replace') {
+        const startDate = String(input.startDate || '');
+        const endDate = String(input.endDate || '');
+        const fetchedAt = Number(input.fetchedAt || now);
+        const rows = Array.isArray(input.rows) ? input.rows as Array<Record<string, unknown>> : [];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || rows.length > 25000) throw new Error('Invalid GSC sync');
+        this.ctx.storage.sql.exec('DELETE FROM gsc_search_rows WHERE day BETWEEN ? AND ?', startDate, endDate);
+        for (const row of rows) {
+          const day = String(row.day || '');
+          const query = String(row.query || '').slice(0, 1000);
+          const page = String(row.page || '').slice(0, 2048);
+          const clicks = Number(row.clicks || 0), impressions = Number(row.impressions || 0);
+          const ctr = Number(row.ctr || 0), position = Number(row.position || 0);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < startDate || day > endDate || !page || ![clicks, impressions, ctr, position].every(Number.isFinite)) continue;
+          this.ctx.storage.sql.exec(
+            `INSERT INTO gsc_search_rows(day, query, page, clicks, impressions, ctr, position, fetched_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            day, query, page, clicks, impressions, ctr, position, fetchedAt,
+          );
+        }
+        return { ok: true, rows: rows.length };
       }
 
       if (path === '/auth/request') {
@@ -590,6 +664,8 @@ export class GenerationState extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM sessions WHERE expires <= ?', now);
     this.ctx.storage.sql.exec('DELETE FROM auth_codes WHERE expires <= ?', now);
     this.ctx.storage.sql.exec('DELETE FROM analytics_events WHERE day < ?', new Date(now - 90 * 86400000).toISOString().slice(0, 10));
+    this.ctx.storage.sql.exec('DELETE FROM daily_funnel_snapshots WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
+    this.ctx.storage.sql.exec('DELETE FROM gsc_search_rows WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
     const remaining = this.ctx.storage.sql.exec<{ n: number }>('SELECT count(*) AS n FROM entries').one().n;
     if (remaining) await this.ctx.storage.setAlarm(now + 60000);
   }

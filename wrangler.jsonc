@@ -22,6 +22,7 @@
   "r2_buckets": [{ "binding": "GENERATIONS", "bucket_name": "mossimage-generations" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GenerationState"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["login@mossimage.run"] }],
+  "triggers": { "crons": ["17 2 * * *"] },
   "vars": {
     "APP_ORIGIN": "https://mossimage.run",
     "GENERATION_ENABLED": "true",
@@ -30,6 +31,7 @@
     "AUTH_ENABLED": "true",
     "AUTH_EMAIL_FROM": "login@mossimage.run",
     "ADMIN_EMAIL": "support@mossimage.run",
+    "GSC_SITE_URL": "sc-domain:mossimage.run",
     "STRIPE_PRICE_CREDIT_PACK_30": "price_1UTXrAPWs6WruTx0DXDurW7G",
     "STRIPE_PRICE_PRO_MONTHLY_80": "price_1UTXs9PWs6WruTx0OAw5ogoe",
     "STRIPE_PRICE_PRO_ANNUAL_800": "price_1UTXtTPWs6WruTx0YvTvKeI8"
