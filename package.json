@@ -1,0 +1,38 @@
+{
+  "name": "mossimage-run",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "NEXT_STATIC_EXPORT=1 next build",
+    "start": "npm run preview",
+    "typecheck": "tsc --noEmit && tsc -p worker/tsconfig.json",
+    "test": "tsx --test tests/*.test.ts",
+    "dev:web": "next dev --hostname 127.0.0.1 --port 3007",
+    "preview": "wrangler dev --local",
+    "test:worker": "tsx --test tests/worker.test.ts",
+    "check:content-dates": "tsx scripts/check-content-dates.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@fal-ai/client": "latest",
+    "lucide-react": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261021.1",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "esbuild": "^0.28.2",
+    "miniflare": "^5.20261019.1-beta",
+    "tsx": "latest",
+    "typescript": "latest",
+    "wrangler": "^4.151.3"
+  }
+}

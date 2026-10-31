@@ -1,0 +1,151 @@
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { EditorialPage } from '@/components/editorial-page';
+import { PromptBuilder } from '@/components/prompt-builder';
+import { PromptExample } from '@/components/prompt-example';
+import { featuredImageHref, featuredImages } from '@/lib/featured-images';
+import { landingPages, publishedIsoDate } from '@/lib/landing-pages';
+import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
+
+const page = landingPages.prompt;
+const canonical = 'https://mossimage.run/guide/prompt/';
+const byId = (id: string) => featuredImages.find(image => image.id === id)!;
+const menu = byId('bilingual-menu');
+const jazz = byId('jazz-poster');
+const botanical = byId('botanical-poster');
+const product = byId('product-showcase');
+const stillLife = byId('still-life');
+const bookshop = byId('bookshop');
+
+const productPhoto = 'A premium amber glass perfume bottle on a pale limestone pedestal, minimal studio product photography, warm beige background, soft diffused light from the upper left, a gentle shadow falling to the right, centered composition, realistic glass reflections, refined editorial advertising style, 1024×1024';
+const portrait = 'An editorial portrait of a ceramic artist in a sunlit workshop, waist-up framing, subject placed on the right third, shelves of handmade vessels softly blurred behind her, late-afternoon window light, warm earth tones, natural skin texture, quiet documentary photography, 1024×1024';
+
+const studioHref = (prompt: string) => `/?prompt=${encodeURIComponent(prompt)}#studio`;
+
+export const metadata: Metadata = {
+  title: page.title,
+  description: page.description,
+  alternates: { canonical: '/guide/prompt/' },
+  openGraph: { title: page.title, description: page.description, url: '/guide/prompt/', type: 'article' },
+};
+
+const sections = [
+  { id: 'builder', title: 'Build a prompt' },
+  { id: 'proven', title: 'Proven prompts and writing tips' },
+  { id: 'results', title: 'See the prompts as real outputs' },
+  { id: 'known-limitations', title: 'Known limitations' },
+] as const;
+
+export default function PromptGuidePage() {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        name: page.heading,
+        url: canonical,
+        description: page.description,
+        datePublished: publishedIsoDate,
+        dateModified: '2026-10-31',
+        isPartOf: { '@id': 'https://mossimage.run/#website' },
+      },
+      breadcrumbStructuredData([
+        { name: 'MOSS-Image Generator', url: 'https://mossimage.run/' },
+        { name: 'Guides', url: 'https://mossimage.run/guide/' },
+        { name: 'Prompt Guide and Builder', url: canonical },
+      ]),
+    ],
+  };
+
+  return <>
+    <JsonLd data={structuredData}/>
+    <EditorialPage
+      breadcrumbs={[{ label: 'MOSS-Image Generator', href: '/' }, { label: 'Guides', href: '/guide/' }, { label: 'Prompt Guide and Builder' }]}
+      eyebrow="INTERACTIVE PROMPT TOOL"
+      title={page.heading}
+      intro="This MOSS-Image prompting guide starts with a builder: combine a subject, style, lighting, and visible text, then copy the prompt or open it in the studio."
+      sections={sections}
+      bottomLink={{ href: '/guide/', label: 'All guides' }}
+      publishedDate="October 26, 2026"
+    >
+      <section id="builder" className="builder-section">
+        <PromptBuilder/>
+      </section>
+
+      <div className="prompt-guide-start">
+        <div><h2>How to use this MOSS-Image prompting guide</h2><span>New to prompt writing? Start with “Describe the subject and medium first,” then browse the proven prompts. Already prompting and refining details? Continue to lighting, exact bilingual text, and JSON layout guidance.</span></div>
+        <a className="inline-action" href="#proven">Browse proven prompts</a>
+      </div>
+
+      <details className="guide-disclosure" id="proven">
+        <summary><span>Try eight proven prompts</span><small>Subjects, lighting, bilingual text, and JSON layouts</small></summary>
+        <div>
+      <section id="subject">
+        <h2>Describe the subject and medium first</h2>
+        <p>Open with the image&apos;s main job: name the subject, setting, and medium before adding style details. These two prompts establish a clear scene without conflicting instructions.</p>
+        <PromptExample label="Whimsical editorial illustration" prompt={bookshop.prompt} href={featuredImageHref(bookshop.id)}/>
+        <PromptExample label="Minimal product photograph" prompt={productPhoto} href={studioHref(productPhoto)}/>
+      </section>
+
+      <section id="light">
+        <h2>Control lighting and composition</h2>
+        <p>Describe where the light comes from, how the subject is framed, and which parts should stay soft or sharp. Keep those instructions concrete enough to visualize.</p>
+        <PromptExample label="Warm still life" prompt={stillLife.prompt} href={featuredImageHref(stillLife.id)}/>
+        <PromptExample label="Environmental portrait" prompt={portrait} href={studioHref(portrait)}/>
+      </section>
+
+      <section id="text">
+        <h2>Write exact Chinese and English text into the image</h2>
+        <p>Put every required phrase in quotation marks, describe its position and visual treatment, and keep the wording short. Generated lettering still needs proofreading before publication.</p>
+        <PromptExample label="Bilingual café menu" prompt={menu.prompt} href={featuredImageHref(menu.id)}/>
+        <PromptExample label="Chinese and English concert poster" prompt={jazz.prompt} href={featuredImageHref(jazz.id)}/>
+      </section>
+
+      <section id="layout">
+        <h2>Place text and objects with JSON layout</h2>
+        <p>Use structured layouts when relative position matters more than free composition. Start with a summary and a few large, non-overlapping regions before adding detail.</p>
+        <PromptExample label="Botanical poster layout" prompt={botanical.prompt} href={featuredImageHref(botanical.id)}/>
+        <PromptExample label="Product showcase layout" prompt={product.prompt} href={featuredImageHref(product.id)}/>
+      </section>
+        </div>
+      </details>
+
+      <section id="results">
+        <h2>These prompts produced real images</h2>
+        <p>The two examples below were generated with MOSS-Image SFT through this studio. Use them as starting points, then change one detail at a time.</p>
+        <p>For more reproducible starting points, study these <Link href="/blog/best-moss-image-prompts-examples-seeds/">proven MOSS-Image prompts with seeds</Link>.</p>
+        <div className="prompt-results">
+          {[menu, botanical].map(image => <figure key={image.id}><div><Image src={image.src} alt={image.alt} fill sizes="(max-width: 760px) 100vw, 35vw"/></div><figcaption>{image.title}<span>{image.label}</span></figcaption></figure>)}
+        </div>
+        <div className="related-links">
+          <Link href="/gallery/">Browse all real creations</Link>
+          <Link href="/chinese-ai-image-generator/">Chinese text generation guide</Link>
+          <Link href="/guide/json-layout/">JSON layout guide</Link>
+          <Link href="/json-layout/">JSON layout generator</Link>
+        </div>
+      </section>
+
+      <section id="known-limitations">
+        <h2>Known limitations</h2>
+        <p>Generated lettering is probabilistic. Quotation marks, shorter phrases, clear placement language, and JSON regions can improve the request, but every word and number still needs proofreading before publication.</p>
+        <p>Style names are not deterministic presets. Describe observable traits such as medium, palette, lighting, texture, framing, and typography instead of relying on an artist or genre label alone.</p>
+        <p>Save the seed when a composition works. Change one prompt detail at a time, because different seeds can move text, objects, and visual style substantially even when the wording stays the same.</p>
+        <div className="related-links"><Link href="/guide/settings/">Local generation settings</Link><Link href="/troubleshooting/">Troubleshooting index</Link></div>
+      </section>
+
+      <section className="prompt-final-cta">
+        <h2>Turn one of these prompts into your own image</h2>
+        <p>Open the studio, edit the subject, text, light, or layout, and generate when it feels like yours. Three starter images are free.</p>
+        <Link className="inline-action" href="/?example=bilingual-menu#studio">Open the studio</Link>
+      </section>
+
+      <section className="sources">
+        <h2>Official source</h2>
+        <p>Prompt formats and model guidance checked October 24, 2026.</p>
+        <a href="https://github.com/OpenMOSS/MOSS-Image/blob/main/USERGUIDE.md" target="_blank" rel="noreferrer">OpenMOSS user guide</a>
+      </section>
+    </EditorialPage>
+  </>;
+}

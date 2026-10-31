@@ -1,0 +1,36 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { EditorialPage } from '@/components/editorial-page';
+import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
+
+const canonical = 'https://mossimage.run/guide/base-guide/';
+const title = 'MOSS-Image Base Guide — Settings, Prompts & Local Setup';
+const description = 'Run MOSS-Image Base with verified CFG, steps, shift, sampler, SLG, prompt, and local workflow settings. Learn when to choose Base instead of SFT.';
+export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/base-guide/' }, openGraph: { title, description, url: '/guide/base-guide/', type: 'article' } };
+const sections = [{ id: 'purpose', title: 'What Base is for' }, { id: 'settings', title: 'Verified settings' }, { id: 'prompts', title: 'Prompt technique' }, { id: 'choose', title: 'Base or SFT?' }, { id: 'local', title: 'Files and local setup' }, { id: 'training', title: 'Training a LoRA' }] as const;
+
+export default function BaseGuidePage() {
+  const data = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'TechArticle', '@id': `${canonical}#article`, headline: 'MOSS-Image Base guide', description, datePublished: '2026-10-27', dateModified: '2026-10-27', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC' } },
+    breadcrumbStructuredData([{ name: 'MOSS-Image Generator', url: 'https://mossimage.run/' }, { name: 'Guides', url: 'https://mossimage.run/guide/' }, { name: 'Base Guide', url: canonical }]),
+  ] };
+  return <><JsonLd data={data}/><EditorialPage breadcrumbs={[{ label: 'MOSS-Image Generator', href: '/' }, { label: 'Guides', href: '/guide/' }, { label: 'Base Guide' }]}
+    eyebrow="BASE CHECKPOINT" title="MOSS-Image Base Guide"
+    intro="Base is the un-post-trained foundation checkpoint in the MOSS-Image family. It can generate finished images, but it asks you to choose suitable inference settings instead of relying on an SFT-tuned default."
+    sections={sections} bottomLink={{ href: '/guide/', label: 'All guides' }} publishedDate="October 27, 2026">
+    <section id="purpose"><h2>Base is not only a training checkpoint</h2><p>The official model card presents Base as a text-to-image model supporting natural-language prompts, tag sequences, bilingual text, and JSON layouts. It is also the foundation intended for community LoRA and post-training work. Use it for direct generation when you want to evaluate that foundation behavior, but do not judge it with arbitrary SFT or Turbo settings.</p><div className="callout"><strong>Start with a controlled reference run.</strong><p>Use the official Base sampling recipe, save the seed, and change only one parameter or prompt field at a time.</p></div></section>
+    <section id="settings"><h2>The verified Base starting point</h2><div className="comparison-table-wrap"><table><thead><tr><th>Setting</th><th>Official starting value</th><th>How to use it</th></tr></thead><tbody>
+      <tr><th>Steps</th><td>50 or more</td><td>Establish quality before testing acceleration.</td></tr>
+      <tr><th>CFG</th><td>3 default; 3–6 recommended</td><td>CFG 3 is generally sufficient for long prompts; test higher values for short prompts.</td></tr>
+      <tr><th>Shift</th><td>5</td><td>Keep it fixed while evaluating CFG or prompt changes.</td></tr>
+      <tr><th>Sampler</th><td>Flow-matching Euler</td><td>Use the matching workflow rather than substituting an unrelated sampler.</td></tr>
+      <tr><th>SLG</th><td>Negative branch, layer 22</td><td>Layers 22, 24, and 26 are documented options; layer 22 is the published starting point.</td></tr>
+      <tr><th>Resolution</th><td>1M, 1.5M, or 2M total pixels recommended</td><td>Use positive dimensions divisible by 16.</td></tr>
+    </tbody></table></div></section>
+    <section id="prompts"><h2>Prompt Base with enough information</h2><p>The official guide says English has the most training data, while Chinese and other languages are supported. Base accepts natural language, tag sequences, and experimental JSON layouts. Long prompts usually work at CFG 3; short prompts may need a controlled sweep toward 6.</p><p>For rendered text, place exact wording in quotation marks and add real line breaks when line structure matters. Treat generated lettering as a draft and proofread every character before publishing.</p><div className="related-links"><Link href="/guide/prompt/">Build a detailed prompt</Link><Link href="/json-layout/">Build a JSON layout</Link></div></section>
+    <section id="choose"><h2>When to choose Base instead of SFT</h2><div className="comparison-table-wrap"><table><thead><tr><th>Choose Base when…</th><th>Choose SFT when…</th></tr></thead><tbody><tr><td>You are benchmarking the foundation checkpoint, training a LoRA, or designing your own post-training process.</td><td>You want the more direct ready-to-use generation path or the hosted online studio.</td></tr><tr><td>You want to explore Base&apos;s untuned diversity with controlled sampling.</td><td>You want to start from the supervised fine-tuned descendant and its published example behavior.</td></tr></tbody></table></div><p>Neither checkpoint wins every prompt. Use the <Link href="/compare/base-vs-sft/">full Base vs SFT comparison</Link> and evaluate scenes that match your real work.</p></section>
+    <section id="local"><h2>Download and run Base locally</h2><p>The official Diffusers repository contains the transformer, text encoder, tokenizer, VAE, scheduler configuration, and pipeline files. The quick start uses BF16 for the transformer and text encoder and FP32 for the VAE and initial noise. In ComfyUI, choose either the native component format or the complete HF-directory plugin path and keep its matching workflow.</p><p>Do not convert model download size into a universal VRAM promise. Peak memory changes with precision, canvas area, offloading, component placement, and runtime implementation.</p><div className="related-links"><Link href="/guide/local-deploy/">Local installation guide</Link><Link href="/workflows/">Download matching workflows</Link><Link href="/guide/settings/">Settings and troubleshooting</Link></div></section>
+    <section id="training"><h2>Training a LoRA on Base</h2><p>Base is deliberately useful for community LoRA and post-training work, but training parameters depend on the trainer, dataset, target modules, precision, and objective. Start from the official repository and a trainer that explicitly supports the MOSS-Image architecture. Record the exact Base revision and validate the adapter against an untouched fixed-seed baseline.</p><p>This page does not prescribe a universal step count or VRAM figure because no single value is valid across dataset sizes and trainers.</p></section>
+    <section className="sources"><h2>Official sources</h2><p>Model and sampling details checked October 27, 2026.</p><a href="https://huggingface.co/OpenMOSS-Team/MOSS-Image-Base" target="_blank" rel="noreferrer">MOSS-Image Base model card</a><a href="https://github.com/OpenMOSS/MOSS-Image/blob/main/USERGUIDE.md" target="_blank" rel="noreferrer">Official Base user guide</a><a href="https://github.com/OpenMOSS/MOSS-Image/blob/main/comfyui/README.md" target="_blank" rel="noreferrer">Official ComfyUI guide</a></section>
+  </EditorialPage></>;
+}

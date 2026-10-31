@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mossimage-run",
+  "account_id": "23e53b75ddd6ee2d8b80031f6a1e45e0",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "mossimage.run", "custom_domain": true },
+    { "pattern": "www.mossimage.run", "custom_domain": true }
+  ],
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "force-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "durable_objects": { "bindings": [{ "name": "GENERATION_STATE", "class_name": "GenerationState" }] },
+  "r2_buckets": [{ "binding": "GENERATIONS", "bucket_name": "mossimage-generations" }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GenerationState"] }],
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["login@mossimage.run"] }],
+  "vars": {
+    "APP_ORIGIN": "https://mossimage.run",
+    "GENERATION_ENABLED": "true",
+    "DAILY_PIXEL_LIMIT": "20000000",
+    "LOCAL_DEV": "false",
+    "AUTH_ENABLED": "true",
+    "AUTH_EMAIL_FROM": "login@mossimage.run",
+    "ADMIN_EMAIL": "support@mossimage.run",
+    "STRIPE_PRICE_CREDIT_PACK_30": "price_1UTXrAPWs6WruTx0DXDurW7G",
+    "STRIPE_PRICE_PRO_MONTHLY_80": "price_1UTXs9PWs6WruTx0OAw5ogoe",
+    "STRIPE_PRICE_PRO_ANNUAL_800": "price_1UTXtTPWs6WruTx0YvTvKeI8"
+  },
+  "dev": { "ip": "127.0.0.1", "port": 8787 }
+}
