@@ -12,9 +12,22 @@ type Summary = {
   breakdowns: Array<Metric & { properties: Record<string, string> }>;
   generationFrequency: Array<{ bucket: string; visitors: number }>;
   dailySnapshots: Array<{ day: string; generatedAt: string; metrics: Metric[] }>;
-  gscDaily: Array<{ day: string; clicks: number; impressions: number; position: number }>;
+  gscDaily: Array<{ day: string; clicks: number; impressions: number; ctr: number; position: number }>;
   gscTopQueries: Array<{ query: string; clicks: number; impressions: number; position: number }>;
   gscLastSync: string | null;
+  gscSync: {
+    lastAttemptAt: string | null; lastSuccessAt: string | null; status: string;
+    rowsWritten: number; totalsWritten: number; inspectedUrls: number;
+    inspectionErrors: number; sitemapsChecked: number; lastError: string | null;
+  };
+  gscInspections: Array<{
+    url: string; inspectedAt: string; verdict?: string; coverageState?: string;
+    lastCrawlTime?: string; googleCanonical?: string; userCanonical?: string;
+  }>;
+  gscSitemaps: Array<{
+    path: string; checkedAt: string; lastSubmitted?: string; lastDownloaded?: string;
+    isPending?: boolean; errors?: string; warnings?: string;
+  }>;
 };
 
 const labels: Record<string, string> = {
@@ -78,6 +91,7 @@ export function AnalyticsDashboard() {
   }, [load]);
 
   const totals = useMemo(() => new Map(data?.totals.map(metric => [metric.event, metric]) || []), [data]);
+  const syncStale = data?.gscSync.lastSuccessAt ? Date.now() - new Date(data.gscSync.lastSuccessAt).getTime() > 26 * 60 * 60 * 1000 : true;
 
   return <div className="analytics-dashboard">
     <div className="analytics-toolbar">
@@ -106,8 +120,23 @@ export function AnalyticsDashboard() {
       </section>
       <section className="analytics-breakdowns">
         <h2>Search Console</h2>
-        <p className="analytics-note">Final Google Search data, refreshed daily with a three-day reporting delay. Last sync: {data.gscLastSync ? new Date(data.gscLastSync).toLocaleString() : 'waiting for first scheduled sync'}.</p>
+        <div className={`analytics-health ${syncStale || data.gscSync.status === 'failed' ? 'warning' : ''}`}>
+          <strong>{data.gscSync.status === 'never' ? 'Waiting for first sync' : `Sync ${data.gscSync.status.replaceAll('_', ' ')}`}</strong>
+          <span>Last success: {data.gscSync.lastSuccessAt ? new Date(data.gscSync.lastSuccessAt).toLocaleString() : 'none'}</span>
+          <span>{data.gscSync.rowsWritten} query rows · {data.gscSync.totalsWritten} daily totals · {data.gscSync.inspectedUrls} URLs inspected</span>
+          {data.gscSync.lastError && <small>{data.gscSync.lastError}</small>}
+        </div>
+        <p className="analytics-note">Final Google Search data, refreshed daily with a three-day reporting delay. Daily totals are queried separately from privacy-filtered query details.</p>
+        {data.gscDaily.length > 0 && <table><thead><tr><th>Date</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Average position</th></tr></thead><tbody>{data.gscDaily.map(row => <tr key={row.day}><td>{row.day}</td><td>{row.clicks}</td><td>{row.impressions}</td><td>{(row.ctr * 100).toFixed(1)}%</td><td>{row.position.toFixed(1)}</td></tr>)}</tbody></table>}
+        <h3>Top queries</h3>
         {data.gscTopQueries.length > 0 ? <table><thead><tr><th>Query</th><th>Clicks</th><th>Impressions</th><th>Average position</th></tr></thead><tbody>{data.gscTopQueries.map(row => <tr key={row.query}><td>{row.query || '(anonymous query)'}</td><td>{row.clicks}</td><td>{row.impressions}</td><td>{row.position.toFixed(1)}</td></tr>)}</tbody></table> : <p className="analytics-note">No Search Console rows have been stored yet.</p>}
+      </section>
+      <section className="analytics-breakdowns">
+        <h2>Google index status</h2>
+        <p className="analytics-note">Latest indexed-version result from the URL Inspection API. This is not a live-page test.</p>
+        {data.gscInspections.length > 0 ? <table><thead><tr><th>URL</th><th>Verdict</th><th>Coverage</th><th>Last crawl</th></tr></thead><tbody>{data.gscInspections.map(row => <tr key={row.url}><td><a href={row.url}>{new URL(row.url).pathname}</a></td><td>{row.verdict || 'Unknown'}</td><td>{row.coverageState || 'Unknown'}</td><td>{row.lastCrawlTime ? new Date(row.lastCrawlTime).toLocaleString() : '—'}</td></tr>)}</tbody></table> : <p className="analytics-note">No URL inspections have been stored yet.</p>}
+        <h3>Sitemaps</h3>
+        {data.gscSitemaps.length > 0 ? <table><thead><tr><th>Sitemap</th><th>Last downloaded</th><th>Errors</th><th>Warnings</th></tr></thead><tbody>{data.gscSitemaps.map(row => <tr key={row.path}><td>{row.path}</td><td>{row.lastDownloaded ? new Date(row.lastDownloaded).toLocaleString() : '—'}</td><td>{row.errors || '0'}</td><td>{row.warnings || '0'}</td></tr>)}</tbody></table> : <p className="analytics-note">No sitemap status has been stored yet.</p>}
       </section>
       <section className="analytics-breakdowns">
         <h2>Daily snapshots</h2>

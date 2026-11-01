@@ -146,16 +146,31 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
       assert.deepEqual(summary.gscDaily,[]);
       assert.deepEqual(summary.gscTopQueries,[]);
       assert.equal(summary.gscLastSync,null);
+      assert.equal(summary.gscSync.status,'never');
       await call('/analytics/snapshot',{day:'2026-10-25',generatedAt:now+1000});
+      await call('/gsc/sync-status',{status:'running',timestamp:now+1500});
       await call('/gsc/replace',{startDate:'2026-10-24',endDate:'2026-10-25',fetchedAt:now+2000,rows:[
         {day:'2026-10-25',query:'moss image generator',page:'https://mossimage.run/',clicks:2,impressions:20,ctr:0.1,position:5.5},
+      ],totals:[
+        {day:'2026-10-25',clicks:3,impressions:30,ctr:0.1,position:6.5},
       ]});
+      await call('/gsc/inspections/replace',{inspectedAt:now+2500,rows:[
+        {url:'https://mossimage.run/compare/base-vs-sft/',payload:{verdict:'PASS',coverageState:'Submitted and indexed'}},
+      ]});
+      await call('/gsc/sitemaps/replace',{checkedAt:now+2500,rows:[
+        {path:'https://mossimage.run/sitemap.xml',payload:{lastDownloaded:'2026-10-25T09:00:00Z',errors:'0',warnings:'0'}},
+      ]});
+      await call('/gsc/sync-status',{status:'success',timestamp:now+3000,rowsWritten:1,totalsWritten:1,inspectedUrls:1,sitemapsChecked:1});
       const persisted=await call('/analytics/summary',{days:30});
       assert.equal(persisted.dailySnapshots.length,1);
       assert.deepEqual(persisted.dailySnapshots[0].metrics,summary.totals);
-      assert.deepEqual(persisted.gscDaily,[{day:'2026-10-25',clicks:2,impressions:20,position:5.5}]);
+      assert.deepEqual(persisted.gscDaily,[{day:'2026-10-25',clicks:3,impressions:30,ctr:0.1,position:6.5}]);
       assert.deepEqual(persisted.gscTopQueries,[{query:'moss image generator',clicks:2,impressions:20,position:5.5}]);
-      assert.equal(persisted.gscLastSync,new Date(now+2000).toISOString());
+      assert.equal(persisted.gscLastSync,new Date(now+3000).toISOString());
+      assert.equal(persisted.gscSync.status,'success');
+      assert.equal(persisted.gscSync.rowsWritten,1);
+      assert.equal(persisted.gscInspections[0].verdict,'PASS');
+      assert.equal(persisted.gscSitemaps[0].errors,'0');
     });
     await t.test('account credits, refunds and billing grants are atomic and idempotent',async()=>{
       const call=ledger('account-credit-ledger');

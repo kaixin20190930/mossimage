@@ -94,6 +94,23 @@ export class GenerationState extends DurableObject<Env> {
       PRIMARY KEY(day, query, page)
     )`);
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS gsc_search_rows_day ON gsc_search_rows(day)');
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS gsc_daily_totals (
+      day TEXT PRIMARY KEY, clicks REAL NOT NULL, impressions REAL NOT NULL,
+      ctr REAL NOT NULL, position REAL NOT NULL, fetched_at INTEGER NOT NULL
+    )`);
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS gsc_sync_status (
+      id INTEGER PRIMARY KEY CHECK (id = 1), last_attempt_at INTEGER,
+      last_success_at INTEGER, status TEXT NOT NULL DEFAULT 'never',
+      rows_written INTEGER NOT NULL DEFAULT 0, totals_written INTEGER NOT NULL DEFAULT 0,
+      inspected_urls INTEGER NOT NULL DEFAULT 0, inspection_errors INTEGER NOT NULL DEFAULT 0,
+      sitemaps_checked INTEGER NOT NULL DEFAULT 0, last_error TEXT
+    )`);
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS gsc_url_inspections (
+      url TEXT PRIMARY KEY, inspected_at INTEGER NOT NULL, payload TEXT NOT NULL
+    )`);
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS gsc_sitemaps (
+      path TEXT PRIMARY KEY, checked_at INTEGER NOT NULL, payload TEXT NOT NULL
+    )`);
   }
 
   protected now() { return Date.now(); }
@@ -199,23 +216,37 @@ export class GenerationState extends DurableObject<Env> {
         const dailySnapshots = this.ctx.storage.sql.exec<{ day: string; generated_at: number; payload: string }>(
           'SELECT day, generated_at, payload FROM daily_funnel_snapshots WHERE day >= ? ORDER BY day DESC', since,
         ).toArray().map(row => ({ day: row.day, generatedAt: new Date(row.generated_at).toISOString(), ...JSON.parse(row.payload) }));
-        const gscDaily = this.ctx.storage.sql.exec<{ day: string; clicks: number; impressions: number; position: number }>(
-          `SELECT day, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
-                  CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE 0 END AS position
-           FROM gsc_search_rows WHERE day >= ? GROUP BY day ORDER BY day DESC`, since,
+        const gscDaily = this.ctx.storage.sql.exec<{ day: string; clicks: number; impressions: number; ctr: number; position: number }>(
+          `SELECT day, clicks, impressions, ctr, position
+           FROM gsc_daily_totals WHERE day >= ? ORDER BY day DESC`, since,
         ).toArray();
         const gscTopQueries = this.ctx.storage.sql.exec<{ query: string; clicks: number; impressions: number; position: number }>(
           `SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
                   CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE 0 END AS position
            FROM gsc_search_rows WHERE day >= ? GROUP BY query ORDER BY clicks DESC, impressions DESC LIMIT 20`, since,
         ).toArray();
-        const gscLastSync = this.ctx.storage.sql.exec<{ fetched_at: number | null }>(
-          'SELECT MAX(fetched_at) AS fetched_at FROM gsc_search_rows',
-        ).one().fetched_at;
+        const syncRow = this.ctx.storage.sql.exec<{
+          last_attempt_at: number | null; last_success_at: number | null; status: string;
+          rows_written: number; totals_written: number; inspected_urls: number;
+          inspection_errors: number; sitemaps_checked: number; last_error: string | null;
+        }>('SELECT last_attempt_at, last_success_at, status, rows_written, totals_written, inspected_urls, inspection_errors, sitemaps_checked, last_error FROM gsc_sync_status WHERE id = 1').toArray()[0];
+        const gscSync = syncRow ? {
+          lastAttemptAt: syncRow.last_attempt_at ? new Date(syncRow.last_attempt_at).toISOString() : null,
+          lastSuccessAt: syncRow.last_success_at ? new Date(syncRow.last_success_at).toISOString() : null,
+          status: syncRow.status, rowsWritten: syncRow.rows_written, totalsWritten: syncRow.totals_written,
+          inspectedUrls: syncRow.inspected_urls, inspectionErrors: syncRow.inspection_errors,
+          sitemapsChecked: syncRow.sitemaps_checked, lastError: syncRow.last_error,
+        } : { lastAttemptAt: null, lastSuccessAt: null, status: 'never', rowsWritten: 0, totalsWritten: 0, inspectedUrls: 0, inspectionErrors: 0, sitemapsChecked: 0, lastError: null };
+        const gscInspections = this.ctx.storage.sql.exec<{ url: string; inspected_at: number; payload: string }>(
+          'SELECT url, inspected_at, payload FROM gsc_url_inspections ORDER BY url',
+        ).toArray().map(row => ({ url: row.url, inspectedAt: new Date(row.inspected_at).toISOString(), ...JSON.parse(row.payload) }));
+        const gscSitemaps = this.ctx.storage.sql.exec<{ path: string; checked_at: number; payload: string }>(
+          'SELECT path, checked_at, payload FROM gsc_sitemaps ORDER BY path',
+        ).toArray().map(row => ({ path: row.path, checkedAt: new Date(row.checked_at).toISOString(), ...JSON.parse(row.payload) }));
         return {
           days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns,
-          generationFrequency, dailySnapshots, gscDaily, gscTopQueries,
-          gscLastSync: gscLastSync ? new Date(gscLastSync).toISOString() : null,
+          generationFrequency, dailySnapshots, gscDaily, gscTopQueries, gscSync,
+          gscLastSync: gscSync.lastSuccessAt, gscInspections, gscSitemaps,
         };
       }
 
@@ -245,8 +276,11 @@ export class GenerationState extends DurableObject<Env> {
         const endDate = String(input.endDate || '');
         const fetchedAt = Number(input.fetchedAt || now);
         const rows = Array.isArray(input.rows) ? input.rows as Array<Record<string, unknown>> : [];
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || rows.length > 25000) throw new Error('Invalid GSC sync');
+        const totals = Array.isArray(input.totals) ? input.totals as Array<Record<string, unknown>> : [];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || rows.length > 25000 || totals.length > 31) throw new Error('Invalid GSC sync');
         this.ctx.storage.sql.exec('DELETE FROM gsc_search_rows WHERE day BETWEEN ? AND ?', startDate, endDate);
+        this.ctx.storage.sql.exec('DELETE FROM gsc_daily_totals WHERE day BETWEEN ? AND ?', startDate, endDate);
+        let insertedRows = 0;
         for (const row of rows) {
           const day = String(row.day || '');
           const query = String(row.query || '').slice(0, 1000);
@@ -259,8 +293,81 @@ export class GenerationState extends DurableObject<Env> {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             day, query, page, clicks, impressions, ctr, position, fetchedAt,
           );
+          insertedRows++;
         }
-        return { ok: true, rows: rows.length };
+        let insertedTotals = 0;
+        for (const row of totals) {
+          const day = String(row.day || '');
+          const clicks = Number(row.clicks || 0), impressions = Number(row.impressions || 0);
+          const ctr = Number(row.ctr || 0), position = Number(row.position || 0);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < startDate || day > endDate || ![clicks, impressions, ctr, position].every(Number.isFinite)) continue;
+          this.ctx.storage.sql.exec(
+            'INSERT INTO gsc_daily_totals(day, clicks, impressions, ctr, position, fetched_at) VALUES (?, ?, ?, ?, ?, ?)',
+            day, clicks, impressions, ctr, position, fetchedAt,
+          );
+          insertedTotals++;
+        }
+        return { ok: true, rows: insertedRows, totals: insertedTotals };
+      }
+
+      if (path === '/gsc/sync-status') {
+        const status = String(input.status || '');
+        const timestamp = Number(input.timestamp || now);
+        if (!['running', 'success', 'success_with_warnings', 'failed', 'skipped'].includes(status) || !Number.isFinite(timestamp)) throw new Error('Invalid GSC status');
+        const error = typeof input.error === 'string' ? input.error.slice(0, 500) : null;
+        this.ctx.storage.sql.exec(
+          `INSERT INTO gsc_sync_status(id, last_attempt_at, last_success_at, status, rows_written, totals_written, inspected_urls, inspection_errors, sitemaps_checked, last_error)
+           VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             last_attempt_at = CASE WHEN excluded.status = 'running' THEN excluded.last_attempt_at ELSE gsc_sync_status.last_attempt_at END,
+             last_success_at = CASE WHEN excluded.status IN ('success','success_with_warnings') THEN excluded.last_success_at ELSE gsc_sync_status.last_success_at END,
+             status = excluded.status, rows_written = excluded.rows_written, totals_written = excluded.totals_written,
+             inspected_urls = excluded.inspected_urls, inspection_errors = excluded.inspection_errors,
+             sitemaps_checked = excluded.sitemaps_checked, last_error = excluded.last_error`,
+          timestamp,
+          status === 'success' || status === 'success_with_warnings' ? timestamp : null,
+          status, Number(input.rowsWritten || 0), Number(input.totalsWritten || 0),
+          Number(input.inspectedUrls || 0), Number(input.inspectionErrors || 0),
+          Number(input.sitemapsChecked || 0), error,
+        );
+        return { ok: true };
+      }
+
+      if (path === '/gsc/inspections/replace') {
+        const inspectedAt = Number(input.inspectedAt || now);
+        const rows = Array.isArray(input.rows) ? input.rows as Array<Record<string, unknown>> : [];
+        if (!Number.isFinite(inspectedAt) || rows.length > 500) throw new Error('Invalid URL inspections');
+        let written = 0;
+        for (const row of rows) {
+          const url = String(row.url || '').slice(0, 2048);
+          if (!url.startsWith(this.env.APP_ORIGIN + '/')) continue;
+          const payload = JSON.stringify(row.payload || {});
+          if (payload.length > 16000) continue;
+          this.ctx.storage.sql.exec(
+            `INSERT INTO gsc_url_inspections(url, inspected_at, payload) VALUES (?, ?, ?)
+             ON CONFLICT(url) DO UPDATE SET inspected_at = excluded.inspected_at, payload = excluded.payload`,
+            url, inspectedAt, payload,
+          );
+          written++;
+        }
+        return { ok: true, rows: written };
+      }
+
+      if (path === '/gsc/sitemaps/replace') {
+        const checkedAt = Number(input.checkedAt || now);
+        const rows = Array.isArray(input.rows) ? input.rows as Array<Record<string, unknown>> : [];
+        if (!Number.isFinite(checkedAt) || rows.length > 100) throw new Error('Invalid sitemap status');
+        this.ctx.storage.sql.exec('DELETE FROM gsc_sitemaps');
+        let written = 0;
+        for (const row of rows) {
+          const sitemapPath = String(row.path || '').slice(0, 2048);
+          if (!sitemapPath.startsWith(this.env.APP_ORIGIN + '/')) continue;
+          const payload = JSON.stringify(row.payload || {});
+          if (payload.length > 16000) continue;
+          this.ctx.storage.sql.exec('INSERT INTO gsc_sitemaps(path, checked_at, payload) VALUES (?, ?, ?)', sitemapPath, checkedAt, payload);
+          written++;
+        }
+        return { ok: true, rows: written };
       }
 
       if (path === '/auth/request') {
@@ -666,6 +773,7 @@ export class GenerationState extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM analytics_events WHERE day < ?', new Date(now - 90 * 86400000).toISOString().slice(0, 10));
     this.ctx.storage.sql.exec('DELETE FROM daily_funnel_snapshots WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
     this.ctx.storage.sql.exec('DELETE FROM gsc_search_rows WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
+    this.ctx.storage.sql.exec('DELETE FROM gsc_daily_totals WHERE day < ?', new Date(now - 730 * 86400000).toISOString().slice(0, 10));
     const remaining = this.ctx.storage.sql.exec<{ n: number }>('SELECT count(*) AS n FROM entries').one().n;
     if (remaining) await this.ctx.storage.setAlarm(now + 60000);
   }
