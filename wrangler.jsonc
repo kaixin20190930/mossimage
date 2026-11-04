@@ -9,6 +9,7 @@
     { "pattern": "www.mossimage.run", "custom_domain": true }
   ],
   "main": "worker/index.ts",
+  "build": { "command": "node scripts/verify-production-deploy.mjs" },
   "compatibility_date": "2026-10-21",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {

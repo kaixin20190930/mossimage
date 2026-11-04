@@ -84,7 +84,7 @@ export async function verifyCode(request: Request, env: Env) {
   try { input = verifySchema.parse(await request.json()); }
   catch { return Response.json({ error: 'Enter the six-digit code from your email.' }, { status: 400 }); }
   const token = randomBytes(32).toString('base64url');
-  const result = await stateCall<{ verified: boolean; account?: Account }>(env, '/auth/verify', {
+  const result = await stateCall<{ verified: boolean; account?: Account; starterGranted?: boolean }>(env, '/auth/verify', {
     email: input.email,
     codeHash: signValue(`${input.email}:${input.code}`, 'email-code', env),
     userId: signValue(input.email, 'user', env),
@@ -92,7 +92,7 @@ export async function verifyCode(request: Request, env: Env) {
   });
   if (!result.verified) return Response.json({ error: 'That code is invalid or has expired.' }, { status: 401 });
   const local = env.LOCAL_DEV === 'true' && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(request.url).hostname);
-  return Response.json({ account: result.account }, {
+  return Response.json({ account: result.account, starterGranted: result.starterGranted === true }, {
     headers: {
       'Cache-Control': 'no-store',
       'Set-Cookie': `moss_session=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; HttpOnly${local ? '' : '; Secure'}; SameSite=Lax`,

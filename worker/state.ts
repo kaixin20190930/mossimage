@@ -74,6 +74,15 @@ export class GenerationState extends DurableObject<Env> {
       created INTEGER NOT NULL, completed INTEGER
     )`);
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS generations_user_created ON generations(user_id, created DESC)');
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS generation_intents (
+      intent_id TEXT PRIMARY KEY, reservation_id TEXT NOT NULL UNIQUE,
+      provider_request_id TEXT UNIQUE, owner_hash TEXT NOT NULL, user_id TEXT,
+      attempt_number INTEGER NOT NULL, pixels INTEGER NOT NULL,
+      write_ahead_at INTEGER NOT NULL, provider_accepted_at INTEGER, resolved_at INTEGER,
+      outcome TEXT NOT NULL DEFAULT 'submitting', failure_reason TEXT,
+      credit_action TEXT NOT NULL DEFAULT 'reserved'
+    )`);
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS generation_intents_owner_time ON generation_intents(owner_hash, write_ahead_at DESC)');
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS webhook_events (
       id TEXT PRIMARY KEY, created INTEGER NOT NULL
     )`);
@@ -164,7 +173,9 @@ export class GenerationState extends DurableObject<Env> {
           'generate_submit','generate_success','generate_fail','verify_email_sent','verify_success',
           'pricing_view','plan_click','checkout_open','checkout_complete',
           'upgrade_impression','upgrade_pack_click','upgrade_pricing_click',
-          'generation_error_view','generation_retry','quick_start_view','quick_start_select','studio_view',
+          'generation_error_view','generation_retry','refunded_retry_cta_view','uncertain_recheck_click',
+          'verified_landing_view','quick_start_eligible','quick_start_rendered',
+          'quick_start_view','quick_start_select','studio_view',
         ]);
         const event = String(input.event || '');
         const visitorHash = String(input.visitorHash || '');
@@ -213,6 +224,15 @@ export class GenerationState extends DurableObject<Env> {
              GROUP BY visitor_hash
            ) GROUP BY bucket ORDER BY MIN(generations)`, since,
         ).toArray();
+        const recoveryV2Since = this.ctx.storage.sql.exec<{ first_seen: number | null }>(
+          `SELECT MIN(first_seen) AS first_seen FROM analytics_events
+           WHERE event IN ('refunded_retry_cta_view','uncertain_recheck_click','verified_landing_view','quick_start_eligible','quick_start_rendered')`,
+        ).one().first_seen;
+        const generationOutcomes = this.ctx.storage.sql.exec<{ outcome: string; failure_reason: string | null; credit_action: string; attempts: number }>(
+          `SELECT outcome, failure_reason, credit_action, COUNT(*) AS attempts
+           FROM generation_intents WHERE write_ahead_at >= ?
+           GROUP BY outcome, failure_reason, credit_action ORDER BY attempts DESC`, now - days * 86400000,
+        ).toArray();
         const dailySnapshots = this.ctx.storage.sql.exec<{ day: string; generated_at: number; payload: string }>(
           'SELECT day, generated_at, payload FROM daily_funnel_snapshots WHERE day >= ? ORDER BY day DESC', since,
         ).toArray().map(row => ({ day: row.day, generatedAt: new Date(row.generated_at).toISOString(), ...JSON.parse(row.payload) }));
@@ -245,7 +265,8 @@ export class GenerationState extends DurableObject<Env> {
         ).toArray().map(row => ({ path: row.path, checkedAt: new Date(row.checked_at).toISOString(), ...JSON.parse(row.payload) }));
         return {
           days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns,
-          generationFrequency, dailySnapshots, gscDaily, gscTopQueries, gscSync,
+          generationFrequency, generationOutcomes, recoveryV2Since: recoveryV2Since ? new Date(recoveryV2Since).toISOString() : null,
+          dailySnapshots, gscDaily, gscTopQueries, gscSync,
           gscLastSync: gscSync.lastSuccessAt, gscInspections, gscSitemaps,
         };
       }
@@ -403,6 +424,7 @@ export class GenerationState extends DurableObject<Env> {
         const starterCredits = this.ctx.storage.sql.exec<{ count: number }>(
           'SELECT COUNT(*) AS count FROM deleted_identities WHERE email_hash = ?', userId,
         ).one().count ? 0 : 3;
+        const existing = this.ctx.storage.sql.exec<{ id: string }>('SELECT id FROM users WHERE email = ?', email).toArray()[0];
         this.ctx.storage.sql.exec(
           `INSERT INTO users(id, email, created, starter_credits) VALUES (?, ?, ?, ?)
            ON CONFLICT(email) DO NOTHING`, userId, email, now,
@@ -413,7 +435,7 @@ export class GenerationState extends DurableObject<Env> {
           'INSERT OR REPLACE INTO sessions(token_hash, user_id, expires) VALUES (?, ?, ?)',
           sessionHash, actual.id, now + 30 * 86400000,
         );
-        return { verified: true, account: this.account(actual) };
+        return { verified: true, account: this.account(actual), starterGranted: !existing && starterCredits > 0 };
       }
 
       if (path === '/session') {
@@ -434,12 +456,21 @@ export class GenerationState extends DurableObject<Env> {
       if (path === '/reserve') {
         const owner = String(input.owner || '');
         const userId = typeof input.userId === 'string' ? input.userId : undefined;
-        const reservationId = String(input.reservationId || '');
+        const reservationId = String(input.reservationId || crypto.randomUUID().replaceAll('-', ''));
+        const intentId = String(input.intentId || crypto.randomUUID());
         const pixels = Number(input.pixels);
         const cap = Number(this.env.DAILY_PIXEL_LIMIT);
-        if (!/^[a-f0-9]{64}$/.test(owner) || !Number.isSafeInteger(pixels) || pixels < 1 || pixels > 1048576 || !Number.isSafeInteger(cap) || cap < 1) throw new Error('Invalid reservation');
+        if (!/^[a-f0-9]{64}$/.test(owner) || !/^[0-9a-f-]{36}$/.test(intentId) || !/^[a-f0-9]{32}$/.test(reservationId) || !Number.isSafeInteger(pixels) || pixels < 1 || pixels > 1048576 || !Number.isSafeInteger(cap) || cap < 1) throw new Error('Invalid reservation');
         const day = new Date(now).toISOString().slice(0, 10);
+        const dayStart = Date.parse(`${day}T00:00:00Z`);
         const midnight = Date.parse(`${day}T00:00:00Z`) + 86400000;
+        const existingIntent = this.ctx.storage.sql.exec<{ owner_hash: string; user_id: string | null; provider_request_id: string | null; outcome: string }>(
+          'SELECT owner_hash, user_id, provider_request_id, outcome FROM generation_intents WHERE intent_id = ?', intentId,
+        ).toArray()[0];
+        if (existingIntent) {
+          if (existingIntent.owner_hash !== owner || (existingIntent.user_id || undefined) !== userId) throw new Error('Invalid generation intent owner');
+          return { allowed: false, code: 'duplicate_intent', providerRequestId: existingIntent.provider_request_id, outcome: existingIntent.outcome };
+        }
         const total = this.read<number>(`pixels:${day}`, now) ?? 0;
         if (total + pixels > cap) return { allowed: false, code: 'budget' };
 
@@ -448,15 +479,18 @@ export class GenerationState extends DurableObject<Env> {
           const used = this.read<number>(`quota:${day}:${owner}`, now) ?? 0;
           if (used >= previewLimit) return { allowed: false, code: this.env.AUTH_ENABLED === 'true' ? 'preview_limit' : 'free_limit' };
           if (this.read(`cooldown:${owner}`, now)) return { allowed: false, code: 'cooldown' };
+          const attempts = this.ctx.storage.sql.exec<{ count: number }>(
+            'SELECT COUNT(*) AS count FROM generation_intents WHERE owner_hash = ? AND user_id IS NULL AND write_ahead_at >= ?', owner, dayStart,
+          ).one().count;
+          if (attempts >= 3) return { allowed: false, code: 'attempts' };
           this.write(`quota:${day}:${owner}`, used + 1, midnight);
           this.write(`pixels:${day}`, total + pixels, midnight);
           this.write(`cooldown:${owner}`, true, now + 30000);
-          if (this.env.AUTH_ENABLED === 'true') {
-            if (reservationId) {
-              if (!/^[a-f0-9]{32}$/.test(reservationId)) throw new Error('Invalid reservation ID');
-              this.write(`preview-reservation:${reservationId}`, { owner, day, pixels }, midnight);
-            }
-          }
+          if (this.env.AUTH_ENABLED === 'true') this.write(`preview-reservation:${reservationId}`, { owner, day, pixels }, midnight);
+          this.ctx.storage.sql.exec(
+            `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, attempt_number, pixels, write_ahead_at)
+             VALUES (?, ?, ?, ?, ?, ?)`, intentId, reservationId, owner, attempts + 1, pixels, now,
+          );
           return { allowed: true, remaining: previewLimit - used - 1, mode: this.env.AUTH_ENABLED === 'true' ? 'preview' : 'legacy' };
         }
 
@@ -478,7 +512,86 @@ export class GenerationState extends DurableObject<Env> {
         this.addLedger(userId, `reserve:${reservationId}`, 'generation_reserved', bucket, -1, now);
         this.write(`pixels:${day}`, total + pixels, midnight);
         this.write(`cooldown-user:${userId}`, true, now + 30000);
+        const attempts = this.ctx.storage.sql.exec<{ count: number }>(
+          'SELECT COUNT(*) AS count FROM generation_intents WHERE owner_hash = ? AND write_ahead_at >= ?', owner, dayStart,
+        ).one().count;
+        this.ctx.storage.sql.exec(
+          `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, user_id, attempt_number, pixels, write_ahead_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`, intentId, reservationId, owner, userId, attempts + 1, pixels, now,
+        );
         return { allowed: true, mode: 'account', account: this.account(this.user(userId)!) };
+      }
+
+      if (path === '/submission/link') {
+        const intentId = String(input.intentId || '');
+        const requestId = String(input.requestId || '');
+        if (!/^[0-9a-f-]{36}$/.test(intentId) || !requestId || requestId.length > 256) throw new Error('Invalid generation intent');
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET provider_request_id = ?, provider_accepted_at = ?, outcome = 'provider_accepted'
+           WHERE intent_id = ?`, requestId, now, intentId,
+        );
+        const reservationId = String(input.reservationId || '');
+        const preview = input.preview === true;
+        if (preview) {
+          const reservation = this.read<{ owner: string; day: string; pixels: number }>(`preview-reservation:${reservationId}`, now);
+          if (!reservation) throw new Error('Invalid preview job');
+          const expires = Date.parse(`${reservation.day}T00:00:00Z`) + 86400000;
+          this.write(`preview-request:${requestId}`, reservationId, expires);
+        } else {
+          this.ctx.storage.sql.exec('UPDATE jobs SET request_id = ? WHERE reservation_id = ?', requestId, reservationId);
+          const job = this.ctx.storage.sql.exec<{ user_id: string }>('SELECT user_id FROM jobs WHERE reservation_id = ?', reservationId).toArray()[0];
+          const prompt = String(input.prompt || '');
+          const mode = String(input.mode || '');
+          const size = String(input.size || '');
+          if (job && prompt.length >= 3 && prompt.length <= 6000 && (mode === 'text' || mode === 'layout') && ['square', 'portrait', 'landscape'].includes(size)) {
+            this.ctx.storage.sql.exec(
+              `INSERT OR REPLACE INTO generations(request_id, user_id, prompt, mode, size, requested_seed, status, created)
+               VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`, requestId, job.user_id, prompt, mode, size,
+              Number.isSafeInteger(input.seed) ? Number(input.seed) : null, now,
+            );
+          }
+        }
+        return { ok: true };
+      }
+
+      if (path === '/intent/uncertain') {
+        const intentId = typeof input.intentId === 'string' ? input.intentId : undefined;
+        const requestId = typeof input.requestId === 'string' ? input.requestId : undefined;
+        const reason = String(input.reason || 'submit_uncertain').slice(0, 64);
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET outcome = ?, failure_reason = ?
+           WHERE ${requestId ? 'provider_request_id = ?' : 'intent_id = ?'} AND resolved_at IS NULL`,
+          reason, reason, requestId || intentId || '',
+        );
+        return { ok: true };
+      }
+
+      if (path === '/intent/resolve') {
+        const requestId = typeof input.requestId === 'string' ? input.requestId : undefined;
+        const intentId = typeof input.intentId === 'string' ? input.intentId : undefined;
+        const outcome = String(input.outcome || '').slice(0, 64);
+        const reason = typeof input.reason === 'string' ? input.reason.slice(0, 64) : null;
+        const creditAction = String(input.creditAction || 'consumed').slice(0, 32);
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET outcome = ?, failure_reason = ?, credit_action = ?, resolved_at = ?
+           WHERE ${requestId ? 'provider_request_id = ?' : 'intent_id = ?'}`,
+          outcome, reason, creditAction, now, requestId || intentId || '',
+        );
+        return { ok: true };
+      }
+
+      if (path === '/intent/get') {
+        const intentId = String(input.intentId || '');
+        const owner = String(input.owner || '');
+        const userId = typeof input.userId === 'string' ? input.userId : undefined;
+        const row = this.ctx.storage.sql.exec<{
+          provider_request_id: string | null; outcome: string; failure_reason: string | null;
+          credit_action: string; write_ahead_at: number; attempt_number: number;
+        }>(
+          `SELECT provider_request_id, outcome, failure_reason, credit_action, write_ahead_at, attempt_number
+           FROM generation_intents WHERE intent_id = ? AND (owner_hash = ? OR user_id = ?)`, intentId, owner, userId || '',
+        ).toArray()[0];
+        return { intent: row || null };
       }
 
       if (path === '/preview/link') {
@@ -771,6 +884,7 @@ export class GenerationState extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM sessions WHERE expires <= ?', now);
     this.ctx.storage.sql.exec('DELETE FROM auth_codes WHERE expires <= ?', now);
     this.ctx.storage.sql.exec('DELETE FROM analytics_events WHERE day < ?', new Date(now - 90 * 86400000).toISOString().slice(0, 10));
+    this.ctx.storage.sql.exec('DELETE FROM generation_intents WHERE write_ahead_at < ?', now - 90 * 86400000);
     this.ctx.storage.sql.exec('DELETE FROM daily_funnel_snapshots WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
     this.ctx.storage.sql.exec('DELETE FROM gsc_search_rows WHERE day < ?', new Date(now - 365 * 86400000).toISOString().slice(0, 10));
     this.ctx.storage.sql.exec('DELETE FROM gsc_daily_totals WHERE day < ?', new Date(now - 730 * 86400000).toISOString().slice(0, 10));

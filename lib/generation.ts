@@ -6,6 +6,7 @@ export const sizes = {
   landscape: { width: 1248, height: 832, label: 'Landscape', ratio: '3:2' },
 } as const;
 export const generationSchema = z.object({
+  intentId: z.string().uuid().optional(),
   prompt: z.string().trim().min(3, 'Describe your image in at least 3 characters.').max(6000),
   size: z.enum(['square', 'portrait', 'landscape']),
   mode: z.enum(['text', 'layout']),

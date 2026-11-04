@@ -28,15 +28,17 @@ export async function status(request: Request, env: Env) {
     const result = await fal.queue.result('fal-ai/moss-image', { requestId });
     const data = result.data as { images?: { url: string }[]; seed?: number; has_nsfw_concepts?: boolean[] };
     if (data.has_nsfw_concepts?.some(Boolean)) {
-      const body = { status: 'FAILED', code: 'generation_failed_refunded', creditRestored: true, error: account ? 'This image was blocked by the safety checker. Your credit was restored.' : 'This image was blocked by the safety checker. The preview did not count toward your daily limit.' };
+      const body = { status: 'FAILED', code: 'generation_safety_refunded', creditRestored: true, error: account ? 'This image was blocked by the safety checker. Your credit was restored.' : 'This image was blocked by the safety checker. The preview did not count toward your daily limit.' };
       await stateCall(env, account ? '/job/refund' : '/preview/refund', { requestId });
+      await stateCall(env, '/intent/resolve', { requestId, outcome: 'safety_refunded', reason: 'safety_block', creditAction: 'restored' });
       await stateCall(env, '/result', { requestId, result: body });
       return reply(body);
     }
     const image = data.images?.[0]?.url;
     if (!image || new URL(image).protocol !== 'https:') {
-      const body = { status: 'FAILED', code: 'generation_failed_refunded', creditRestored: true, error: account ? 'The provider returned no usable image. Your credit was restored.' : 'The provider returned no usable image. The preview did not count toward your daily limit.' };
+      const body = { status: 'FAILED', code: 'generation_no_image_refunded', creditRestored: true, error: account ? 'The provider returned no usable image. Your credit was restored.' : 'The provider returned no usable image. The preview did not count toward your daily limit.' };
       await stateCall(env, account ? '/job/refund' : '/preview/refund', { requestId });
+      await stateCall(env, '/intent/resolve', { requestId, outcome: 'no_image_refunded', reason: 'no_usable_image', creditAction: 'restored' });
       await stateCall(env, '/result', { requestId, result: body });
       return reply(body);
     }
@@ -60,7 +62,11 @@ export async function status(request: Request, env: Env) {
     }
     const body = { status: 'COMPLETED', image: archivedImage || image, seed: data.seed };
     await stateCall(env, '/job/complete', { requestId });
+    await stateCall(env, '/intent/resolve', { requestId, outcome: 'completed', creditAction: 'consumed' });
     await stateCall(env, '/result', { requestId, result: body });
     return reply(body);
-  } catch { return reply({ code: 'generation_status_uncertain', creditRestored: false, error: 'This generation is still being checked. Avoid submitting it again immediately so you are not charged twice.' }, 502); }
+  } catch {
+    await stateCall(env, '/intent/uncertain', { requestId, reason: 'poll_uncertain' }).catch(() => undefined);
+    return reply({ code: 'generation_poll_uncertain', creditRestored: false, error: 'This generation is still being checked. Check this job again before submitting another one.' }, 502);
+  }
 }

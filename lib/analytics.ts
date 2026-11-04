@@ -16,6 +16,11 @@ export type FunnelEvent =
   | 'upgrade_pricing_click'
   | 'generation_error_view'
   | 'generation_retry'
+  | 'refunded_retry_cta_view'
+  | 'uncertain_recheck_click'
+  | 'verified_landing_view'
+  | 'quick_start_eligible'
+  | 'quick_start_rendered'
   | 'quick_start_view'
   | 'quick_start_select';
 

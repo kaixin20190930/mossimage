@@ -62,6 +62,7 @@ export default function FreePage() {
           {free.features.map(feature => <span key={feature}><Check size={15}/>{feature}</span>)}
         </div>
         <p className="small-note">Generation uses a shared service budget and cooldown. Availability can pause temporarily when the daily budget is reached.</p>
+        <p className="small-note">When the service confirms a technical failure or safety rejection, the reserved credit is restored automatically. If a submitted job is still being checked, the studio lets you check that original job before starting another.</p>
       </section>
 
       <section id="start">

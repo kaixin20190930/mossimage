@@ -129,12 +129,16 @@ export function AccountMenu() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),
       });
-      const body = await response.json() as { error?: string };
+      const body = await response.json() as { error?: string; starterGranted?: boolean };
       if (!response.ok) throw new Error(body.error);
       track('verify_success');
+      if (body.starterGranted) {
+        window.sessionStorage.setItem('moss-quick-start-eligible', '1');
+        track('quick_start_eligible');
+      }
       await refresh();
       window.dispatchEvent(new Event('moss-account-change'));
-      window.location.assign('/?verified=1#studio');
+      window.location.assign('/#studio');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not sign in.');
     } finally {

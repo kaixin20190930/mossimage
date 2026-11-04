@@ -14,11 +14,14 @@ const quickStarts = ['bilingual-menu', 'jazz-poster', 'botanical-poster', 'produ
 
 type ErrorCode =
   | 'credits_exhausted' | 'starter_limit' | 'generation_failed_refunded'
-  | 'generation_status_uncertain' | 'cooldown' | 'daily_budget_exhausted'
+  | 'generation_provider_failed_refunded' | 'generation_safety_refunded' | 'generation_no_image_refunded'
+  | 'generation_status_uncertain' | 'generation_submit_uncertain' | 'generation_poll_uncertain'
+  | 'cooldown' | 'daily_budget_exhausted' | 'preview_attempt_limit'
   | 'account_frozen' | 'sign_in_required' | 'preview_limit' | 'preview_requires_account' | 'invalid_job'
   | 'generation_unavailable' | 'unknown';
 
 type GenerationBody = {
+  intentId?: string;
   token?: string;
   remaining?: number;
   account?: { plan?: 'free' | 'monthly' | 'annual'; starterCredits?: number; subscriptionCredits?: number; packCredits?: number };
@@ -30,6 +33,9 @@ type GenerationBody = {
   creditRestored?: boolean;
   preview?: boolean;
 };
+
+type PendingGeneration = { intentId: string; token?: string };
+const pendingGenerationKey = 'moss-pending-generation';
 
 type GenerationIssue = {
   kind: 'refunded' | 'uncertain' | 'generic';
@@ -78,6 +84,7 @@ export function Studio() {
   const alive = useRef(true);
   const upgradeTracked = useRef(false);
   const generationSource = useRef<'default' | 'example' | 'quick_start' | 'shared' | 'manual'>('default');
+  const pendingGeneration = useRef<PendingGeneration | undefined>(undefined);
 
   function currentUtcDay() {
     return new Date().toISOString().slice(0, 10);
@@ -100,9 +107,16 @@ export function Studio() {
     // does not expose them, so shared links explain the boundary instead of
     // silently pretending those values were applied.
     setLocalOnlyPreset(params.has('shift') || params.has('slg'));
-    const verified = params.get('verified') === '1';
+    const eligible = window.sessionStorage.getItem('moss-quick-start-eligible') === '1';
+    const verified = eligible || params.get('verified') === '1';
+    window.sessionStorage.removeItem('moss-quick-start-eligible');
     setVerifiedWelcome(verified);
-    if (verified) track('quick_start_view');
+    if (verified) track('verified_landing_view');
+    if (params.has('verified')) {
+      params.delete('verified');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    }
     if (params.get('model') === 'base') setModel('base');
     else if (params.get('model') === 'sft') setModel('sft');
     const selected = featuredImageById(params.get('example'));
@@ -125,6 +139,13 @@ export function Studio() {
       setMode('layout');
     }
     track('studio_view', { source: generationSource.current });
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(pendingGenerationKey) || 'null') as PendingGeneration | null;
+      if (saved?.intentId) {
+        pendingGeneration.current = saved;
+        setIssue({ kind: 'uncertain', code: 'generation_status_uncertain', message: 'A generation from this tab is still being checked.' });
+      }
+    } catch { window.sessionStorage.removeItem(pendingGenerationKey); }
 
     const refreshAccount = () => fetch('/api/account/')
       .then(response => response.json())
@@ -161,6 +182,18 @@ export function Studio() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!verifiedWelcome) return;
+    track('quick_start_view');
+    track('quick_start_rendered');
+  }, [verifiedWelcome]);
+
+  function savePending(next?: PendingGeneration) {
+    pendingGeneration.current = next;
+    if (next) window.sessionStorage.setItem(pendingGenerationKey, JSON.stringify(next));
+    else window.sessionStorage.removeItem(pendingGenerationKey);
+  }
+
   function revealUpgrade(isStarterComplete = false) {
     setStarterComplete(isStarterComplete);
     setUpgradeVisible(true);
@@ -174,6 +207,7 @@ export function Studio() {
     setIssue(next);
     setError('');
     track('generation_error_view', { errorCode: next.code });
+    if (next.kind === 'refunded') track('refunded_retry_cta_view', { errorCode: next.code });
   }
 
   async function generate(isRetry = false) {
@@ -206,6 +240,8 @@ export function Studio() {
 
     if (isRetry) track('generation_retry', { errorCode: 'generation_failed_refunded' });
     track('generate_submit', { mode, size, source: generationSource.current });
+    const intentId = crypto.randomUUID();
+    savePending({ intentId });
     setBusy(true);
     setStatus('Submitting your idea…');
 
@@ -216,6 +252,7 @@ export function Studio() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            intentId,
             prompt: text,
             size,
             mode,
@@ -226,11 +263,15 @@ export function Studio() {
           signal: AbortSignal.timeout(30000),
         });
       } catch {
-        throw new GenerationRequestError({ code: 'generation_status_uncertain' }, 'The request status could not be confirmed. Avoid submitting it again immediately.');
+        throw new GenerationRequestError({ code: 'generation_submit_uncertain' }, 'The request status could not be confirmed. Check this generation before submitting it again.');
       }
 
       const job = await response.json() as GenerationBody;
-      if (!response.ok) throw new GenerationRequestError(job, 'Could not start generation.');
+      if (job.intentId || job.token) savePending({ intentId: job.intentId || intentId, token: job.token });
+      if (!response.ok) {
+        if (job.code !== 'generation_submit_uncertain' && job.code !== 'generation_poll_uncertain' && job.code !== 'generation_status_uncertain') savePending();
+        throw new GenerationRequestError(job, 'Could not start generation.');
+      }
       if (!job.preview) {
         setRemaining(job.remaining ?? null);
       }
@@ -249,6 +290,7 @@ export function Studio() {
         if (!poll.ok) throw new GenerationRequestError(result, 'Could not check your generation.');
         if (result.status === 'COMPLETED') {
           track('generate_success', { mode, size, source: generationSource.current });
+          savePending();
           setImage(result.image || '');
           setResultSeed(result.seed);
           setStatus('Your image is ready.');
@@ -268,6 +310,7 @@ export function Studio() {
           return;
         }
         if (result.status === 'FAILED') {
+          savePending();
           window.dispatchEvent(new Event('moss-account-change'));
           throw new GenerationRequestError(result, 'Generation failed.');
         }
@@ -290,6 +333,7 @@ export function Studio() {
         window.dispatchEvent(new Event('moss-open-account'));
         setError(generationError.message);
       } else if (generationError.creditRestored || generationError.code === 'generation_failed_refunded') {
+        savePending();
         if (signedIn === false) {
           markPreviewUsed(false);
           setPreviewComplete(false);
@@ -298,11 +342,68 @@ export function Studio() {
         window.dispatchEvent(new Event('moss-account-change'));
       } else if (generationError.code === 'generation_status_uncertain') {
         showIssue({ kind: 'uncertain', code: generationError.code, message: generationError.message });
+      } else if (generationError.code === 'generation_submit_uncertain' || generationError.code === 'generation_poll_uncertain') {
+        showIssue({ kind: 'uncertain', code: generationError.code, message: generationError.message });
       } else {
         showIssue({ kind: 'generic', code: generationError.code, message: generationError.message });
       }
     } finally {
       if (alive.current) setBusy(false);
+    }
+  }
+
+  async function checkPendingStatus() {
+    const pending = pendingGeneration.current;
+    if (!pending) return;
+    track('uncertain_recheck_click', { errorCode: issue?.code || 'generation_status_uncertain' });
+    setBusy(true);
+    setStatus('Checking the original generation…');
+    try {
+      let token = pending.token;
+      if (!token) {
+        const intentResponse = await fetch(`/api/generate/intent/?id=${encodeURIComponent(pending.intentId)}`);
+        const intent = await intentResponse.json() as { token?: string; outcome?: string; error?: string };
+        if (intentResponse.status === 404) {
+          savePending();
+          setIssue({ kind: 'generic', code: 'generation_unavailable', message: 'This request did not reach the generation service. You can submit it again.' });
+          return;
+        }
+        if (!intentResponse.ok) throw new Error(intent.error || 'This generation could not be checked.');
+        token = intent.token;
+        if (!token) {
+          setIssue({ kind: 'uncertain', code: 'generation_submit_uncertain', message: 'The provider has not returned a job ID yet. Do not submit this prompt again yet.' });
+          return;
+        }
+        savePending({ ...pending, token });
+      }
+      const response = await fetch(`/api/generate/status/?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(15000) });
+      const result = await response.json() as GenerationBody;
+      if (!response.ok) throw new GenerationRequestError(result, 'Could not check your generation.');
+      if (result.status === 'COMPLETED') {
+        track('generate_success', { mode, size, source: generationSource.current });
+        setImage(result.image || '');
+        setResultSeed(result.seed);
+        setIssue(undefined);
+        setStatus('Your image is ready.');
+        savePending();
+        window.dispatchEvent(new Event('moss-account-change'));
+        return;
+      }
+      if (result.status === 'FAILED') {
+        savePending();
+        throw new GenerationRequestError(result, 'Generation failed.');
+      }
+      setIssue({ kind: 'uncertain', code: 'generation_status_uncertain', message: 'The original generation is still running. Check it again shortly.' });
+    } catch (caught) {
+      const generationError = caught instanceof GenerationRequestError ? caught : new GenerationRequestError({}, caught instanceof Error ? caught.message : 'This generation could not be checked.');
+      if (generationError.creditRestored) {
+        savePending();
+        showIssue({ kind: 'refunded', code: generationError.code, message: generationError.message });
+      } else {
+        setIssue({ kind: 'uncertain', code: generationError.code, message: generationError.message });
+      }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -427,7 +528,7 @@ export function Studio() {
           <strong>{issue.kind === 'refunded' ? 'This generation didn’t complete.' : issue.kind === 'uncertain' ? 'This generation is still being checked.' : 'Generation could not continue.'}</strong>
           <p>{issue.kind === 'refunded' ? (signedIn === false ? 'This preview did not count toward your daily limit. Adjust the prompt and try again.' : 'Your credit has been restored. Adjust your prompt or canvas shape and try again.') : issue.message}</p>
           {issue.kind === 'refunded' && <div><button type="button" onClick={() => void generate(true)}>Try again</button><button type="button" className="secondary" onClick={changeCanvasShape}>Change canvas shape</button></div>}
-          {issue.kind === 'uncertain' && <button type="button" className="secondary" onClick={() => window.dispatchEvent(new Event('moss-account-change'))}>Refresh credit balance</button>}
+          {issue.kind === 'uncertain' && <button type="button" className="secondary" onClick={() => void checkPendingStatus()} disabled={busy}>Check status</button>}
         </div>}
         {upgradeVisible && <div className="upgrade-card" aria-live="polite">
           <span className="eyebrow">KEEP CREATING</span>

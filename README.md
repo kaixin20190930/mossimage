@@ -66,6 +66,7 @@ npm run test:worker
 - Next.js 在构建时输出所有内容页 HTML、JS、sitemap 和 robots 到 `out/`。
 - Worker 提供同源 API，保留 fal.ai 安全检查、尺寸白名单、请求大小校验、JSON 布局校验和签名任务 token。
 - 单个命名 Durable Object `generation-ledger-v1` 管理所有个人次数、全站像素预算、冷却和结果缓存。
+- 匿名预览的服务端 owner 是 Cloudflare 客户端 IP 经应用密钥 HMAC 后的稳定哈希；每天最多三次真正发往供应商的尝试。该轻量规则不使用浏览器指纹，但共享 NAT 会共用上限，换 IP 也会形成新的 owner。
 - 漏斗事件使用同源 `/api/analytics/` 写入同一个 Durable Object，不依赖第三方分析 SDK。只保存签名后的随机浏览器 ID、事件名和白名单维度，90 天后清理；管理员使用 `support@mossimage.run` 登录后可在 `/admin/analytics/` 查看汇总。
 - SQLite `transactionSync` 在一个事务里预留个人次数和全站预算，避免并发超支。
 - 默认每个 IP 哈希每天 3 次、间隔 30 秒、全站每日 20 MP；按 $0.05/MP 线性估算约 $1，实际账单可能不同。请同时使用供应商账户预算。
@@ -94,7 +95,7 @@ npm run test:worker
 
 验证记录：`artifacts/production-check.json`，页面截图：`artifacts/production-home.png`。
 
-后续发布先执行 `npm test`、`npm run typecheck`、`npm run build`，再执行 `npx wrangler deploy`。仅准备时使用 `npx wrangler deploy --dry-run`，它不会验证云端权限、域名或证书。`.dev.vars` 只供本地使用，不随发布上传。当前 OAuth 可读 Zone、部署 Worker 和管理 Worker Secrets；DNS 记录管理需使用已登录的控制台。
+后续生产发布统一执行 `npm run deploy:production`。Wrangler 自身配置了强制 Git 门禁：工作区必须干净、当前分支必须有上游、自动 fetch 后本地 `HEAD` 必须与远端上游完全一致，否则即使直接运行 `npx wrangler deploy` 也会拒绝发布。发布顺序固定为提交并 push、测试、类型检查、生产构建、Cloudflare 部署。仅准备时使用 `npx wrangler deploy --dry-run`；它同样检查 Git 状态，但不会验证云端权限、域名或证书。`.dev.vars` 只供本地使用，不随发布上传。当前 OAuth 可读 Zone、部署 Worker 和管理 Worker Secrets；DNS 记录管理需使用已登录的控制台。
 
 ## 当前边界
 

@@ -11,6 +11,8 @@ const events = [
   'plan_click', 'checkout_open', 'checkout_complete',
   'upgrade_impression', 'upgrade_pack_click', 'upgrade_pricing_click',
   'generation_error_view', 'generation_retry',
+  'refunded_retry_cta_view', 'uncertain_recheck_click',
+  'verified_landing_view', 'quick_start_eligible', 'quick_start_rendered',
   'quick_start_view', 'quick_start_select',
 ] as const;
 
@@ -23,7 +25,10 @@ const eventSchema = z.object({
     size: z.enum(['square', 'portrait', 'landscape']).optional(),
     errorCode: z.enum([
       'credits_exhausted', 'starter_limit', 'generation_failed_refunded',
-      'generation_status_uncertain', 'cooldown', 'daily_budget_exhausted',
+      'generation_provider_failed_refunded', 'generation_safety_refunded',
+      'generation_no_image_refunded', 'generation_status_uncertain',
+      'generation_submit_uncertain', 'generation_poll_uncertain',
+      'cooldown', 'daily_budget_exhausted', 'preview_attempt_limit',
       'account_frozen', 'sign_in_required', 'invalid_job',
       'generation_unavailable', 'preview_limit', 'preview_requires_account', 'unknown',
     ]).optional(),

@@ -114,6 +114,24 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
       assert.deepEqual(await call('/preview/refund',{requestId}),{refunded:false});
       assert.deepEqual(await call('/reserve',{owner:previewOwner,reservationId:'9'.repeat(32),pixels:262144}),{allowed:true,remaining:0,mode:'preview'});
     });
+    await t.test('anonymous confirmed failures restore quota but stop after three provider attempts',async()=>{
+      const call=ledger('preview-attempt-limit');
+      const previewOwner='6'.repeat(64);
+      for (let attempt=0;attempt<3;attempt++) {
+        const reservationId=(attempt+1).toString(16).repeat(32);
+        const requestId=`attempt-${attempt+1}`;
+        assert.equal((await call('/reserve',{owner:previewOwner,reservationId,intentId:`550e8400-e29b-41d4-a716-44665544000${attempt}`,pixels:262144})).allowed,true);
+        await call('/preview/link',{reservationId,requestId});
+        assert.deepEqual(await call('/preview/refund',{requestId}),{refunded:true});
+      }
+      assert.deepEqual(await call('/reserve',{owner:previewOwner,reservationId:'f'.repeat(32),intentId:'550e8400-e29b-41d4-a716-446655440009',pixels:262144}),{allowed:false,code:'attempts'});
+    });
+    await t.test('write-ahead intent is idempotent before provider submission',async()=>{
+      const call=ledger('intent-idempotency');
+      const intentId='550e8400-e29b-41d4-a716-446655440000';
+      assert.equal((await call('/reserve',{owner,reservationId:'a'.repeat(32),intentId,pixels:262144})).allowed,true);
+      assert.deepEqual(await call('/reserve',{owner,reservationId:'b'.repeat(32),intentId,pixels:262144}),{allowed:false,code:'duplicate_intent',providerRequestId:null,outcome:'submitting'});
+    });
     await t.test('failed budget reservation leaves no cooldown or personal debit',async()=>{
       const call=ledger('denied');
       await call('/reserve',{owner:'c'.repeat(64),pixels:1048576});

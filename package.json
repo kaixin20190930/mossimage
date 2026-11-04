@@ -10,6 +10,7 @@
     "test": "tsx --test tests/*.test.ts",
     "dev:web": "next dev --hostname 127.0.0.1 --port 3007",
     "preview": "wrangler dev --local",
+    "deploy:production": "npm test && npm run typecheck && npm run build && wrangler deploy",
     "test:worker": "tsx --test tests/worker.test.ts",
     "check:content-dates": "tsx scripts/check-content-dates.ts"
   },

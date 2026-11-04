@@ -1,7 +1,7 @@
 import type { Env } from './env';
 import { stateCall } from './state';
 const NextResponse = Response;
-import { submitImage } from './fal-submit';
+import { FalSubmitError, submitImage } from './fal-submit';
 import { generationSchema, sizes, validateLayout } from '../lib/generation';
 import { configured, identity, signJob } from '../lib/server';
 import { randomBytes } from 'node:crypto';
@@ -31,9 +31,19 @@ export async function generate(request: Request, env: Env) {
   }
   const { width, height } = preview ? { width: 512, height: 512 } : sizes[input.size];
   const reservationId = randomBytes(16).toString('hex');
+  const intentId = input.intentId || crypto.randomUUID();
+  let providerRequestId: string | undefined;
   try {
-    const reservation = await stateCall<{ allowed: boolean; code?: string; remaining?: number; account?: unknown }>(env, '/reserve', { owner, userId: account?.id, reservationId, pixels: width * height });
+    const reservation = await stateCall<{ allowed: boolean; code?: string; remaining?: number; account?: unknown; providerRequestId?: string; outcome?: string }>(env, '/reserve', { owner, userId: account?.id, reservationId, intentId, pixels: width * height });
     if (!reservation.allowed) {
+      if (reservation.code === 'duplicate_intent') {
+        return NextResponse.json({
+          intentId,
+          ...(reservation.providerRequestId ? { token: signJob(reservation.providerRequestId, account?.id || owner, env) } : {}),
+          code: 'generation_submit_uncertain', creditRestored: false,
+          error: 'This generation request already exists. Check its status instead of submitting it again.',
+        }, { status: 409 });
+      }
       const messages: Record<string, string> = {
         cooldown: 'Please wait 30 seconds between generations.',
         free_limit: 'Your 3 daily generations have been used. Quota resets at 00:00 UTC.',
@@ -42,6 +52,7 @@ export async function generate(request: Request, env: Env) {
         credits: 'You have no image credits left. Choose a plan or credit pack to continue.',
         frozen: 'This account is temporarily unable to generate. Contact support.',
         auth: 'Sign in to use your image credits.',
+        attempts: 'This browser network has reached today’s preview attempt limit. Please try again tomorrow.',
       };
       const codes: Record<string, string> = {
         cooldown: 'cooldown',
@@ -51,6 +62,7 @@ export async function generate(request: Request, env: Env) {
         credits: 'credits_exhausted',
         frozen: 'account_frozen',
         auth: 'sign_in_required',
+        attempts: 'preview_attempt_limit',
       };
       return NextResponse.json({ code: codes[reservation.code || ''] || 'generation_unavailable', error: messages[reservation.code || ''] || 'Generation is unavailable.' }, { status: reservation.code === 'auth' ? 401 : 429, headers: { 'Retry-After': reservation.code === 'cooldown' ? '30' : '3600' } });
     }
@@ -65,21 +77,32 @@ export async function generate(request: Request, env: Env) {
       enable_safety_checker: true,
       output_format: 'png',
     });
-    if (account) await stateCall(env, '/job/link', {
-      reservationId, requestId: result.request_id, prompt: input.prompt,
+    providerRequestId = result.request_id;
+    await stateCall(env, '/submission/link', {
+      intentId, reservationId, requestId: result.request_id, preview, prompt: input.prompt,
       mode: input.mode, size: input.size, seed: input.seed,
     });
-    else if (preview) await stateCall(env, '/preview/link', { reservationId, requestId: result.request_id });
     console.info(JSON.stringify({ event: 'generation_submitted', requestId: result.request_id, pixels: width * height }));
     const updated = reservation.account as { starterCredits?: number; subscriptionCredits?: number; packCredits?: number } | undefined;
     const remaining = updated ? (updated.starterCredits || 0) + (updated.subscriptionCredits || 0) + (updated.packCredits || 0) : reservation.remaining;
-    return NextResponse.json({ token: signJob(result.request_id, account?.id || owner, env), remaining, account: reservation.account, preview }, { status: 202, headers: { 'Cache-Control': 'no-store' } });
-  } catch {
+    return NextResponse.json({ intentId, token: signJob(result.request_id, account?.id || owner, env), remaining, account: reservation.account, preview }, { status: 202, headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    if (providerRequestId || (error instanceof FalSubmitError && error.uncertain)) {
+      await stateCall(env, '/intent/uncertain', { intentId, requestId: providerRequestId, reason: providerRequestId ? 'link_uncertain' : 'submit_uncertain' }).catch(() => undefined);
+      console.error(JSON.stringify({ event: 'generation_submit_uncertain', intentId }));
+      return NextResponse.json({
+        intentId,
+        ...(providerRequestId ? { token: signJob(providerRequestId, account?.id || owner, env) } : {}),
+        code: 'generation_submit_uncertain', creditRestored: false,
+        error: 'The provider may have received this request. Check this generation again before submitting another one.',
+      }, { status: 502 });
+    }
     if (account) await stateCall(env, '/job/refund', { reservationId }).catch(() => undefined);
     else if (preview) await stateCall(env, '/preview/refund', { reservationId }).catch(() => undefined);
-    console.error(JSON.stringify({ event: 'generation_submit_failed' }));
+    await stateCall(env, '/intent/resolve', { intentId, outcome: 'provider_failed_refunded', reason: 'provider_http_failure', creditAction: 'restored' }).catch(() => undefined);
+    console.error(JSON.stringify({ event: 'generation_submit_failed', intentId }));
     return NextResponse.json(account
-      ? { code: 'generation_failed_refunded', creditRestored: true, error: 'The generation service is unavailable. Your image credit has been restored.' }
-      : { code: 'generation_failed_refunded', creditRestored: true, error: 'Generation failed. This preview did not count toward your daily limit. Please try again.' }, { status: 502 });
+      ? { intentId, code: 'generation_provider_failed_refunded', creditRestored: true, error: 'The generation service is unavailable. Your image credit has been restored.' }
+      : { intentId, code: 'generation_provider_failed_refunded', creditRestored: true, error: 'Generation failed. This preview did not count toward your daily limit. Please try again.' }, { status: 502 });
   }
 }

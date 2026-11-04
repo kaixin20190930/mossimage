@@ -11,6 +11,8 @@ type Summary = {
   daily: Array<Metric & { day: string }>;
   breakdowns: Array<Metric & { properties: Record<string, string> }>;
   generationFrequency: Array<{ bucket: string; visitors: number }>;
+  generationOutcomes: Array<{ outcome: string; failure_reason: string | null; credit_action: string; attempts: number }>;
+  recoveryV2Since: string | null;
   dailySnapshots: Array<{ day: string; generatedAt: string; metrics: Metric[] }>;
   gscDaily: Array<{ day: string; clicks: number; impressions: number; ctr: number; position: number }>;
   gscTopQueries: Array<{ query: string; clicks: number; impressions: number; position: number }>;
@@ -46,6 +48,11 @@ const labels: Record<string, string> = {
   upgrade_pricing_click: 'Upgrade pricing opened',
   generation_error_view: 'Generation recovery shown',
   generation_retry: 'Generation retried',
+  refunded_retry_cta_view: 'Refunded retry CTA shown',
+  uncertain_recheck_click: 'Uncertain job checked',
+  verified_landing_view: 'Verified landing loaded',
+  quick_start_eligible: 'Quick start eligible',
+  quick_start_rendered: 'Quick start rendered',
   quick_start_view: 'Quick starts shown',
   quick_start_select: 'Quick start selected',
 };
@@ -58,7 +65,9 @@ const funnel = [
   ['checkout_open', 'checkout_complete'],
   ['upgrade_impression', 'upgrade_pack_click'],
   ['upgrade_impression', 'upgrade_pricing_click'],
-  ['generation_error_view', 'generation_retry'],
+  ['refunded_retry_cta_view', 'generation_retry'],
+  ['quick_start_eligible', 'quick_start_rendered'],
+  ['quick_start_rendered', 'quick_start_select'],
 ] as const;
 
 export function AnalyticsDashboard() {
@@ -100,7 +109,7 @@ export function AnalyticsDashboard() {
     </div>
     {status && <div className="analytics-empty"><p>{status}</p>{status.startsWith('Sign in') && <button type="button" onClick={() => window.dispatchEvent(new Event('moss-open-account'))}>Sign in</button>}</div>}
     {data && <>
-      <p className="analytics-note">Anonymous first-party events since {data.since}. “People” counts distinct browser IDs; no email, prompt, image, or IP is stored.</p>
+      <p className="analytics-note">Anonymous first-party events since {data.since}. “People” counts distinct browser IDs; no email, prompt, image, or IP is stored. Recovery and rendered-step metrics use the new definition only from {data.recoveryV2Since ? new Date(data.recoveryV2Since).toLocaleString() : 'the first new event'}; do not compare them directly with the legacy October funnel.</p>
       <div className="analytics-metrics">{Object.entries(labels).map(([event, label]) => {
         const metric = totals.get(event);
         return <article key={event}><span>{label}</span><strong>{metric?.events || 0}</strong><small>{metric?.visitors || 0} people</small></article>;
@@ -117,6 +126,11 @@ export function AnalyticsDashboard() {
       <section className="analytics-funnel">
         <h2>Successful generations per person</h2>
         <div>{data.generationFrequency.map(row => <article key={row.bucket}><span>{row.bucket} successful {row.bucket === '1' ? 'generation' : 'generations'}</span><strong>{row.visitors}</strong><small>anonymous browser IDs</small></article>)}</div>
+      </section>
+      <section className="analytics-breakdowns">
+        <h2>Generation outcomes</h2>
+        <p className="analytics-note">Request-level server records written before contacting the provider. Owner identifiers are not exposed in this report.</p>
+        {data.generationOutcomes.length > 0 ? <table><thead><tr><th>Outcome</th><th>Reason</th><th>Credit</th><th>Attempts</th></tr></thead><tbody>{data.generationOutcomes.map(row => <tr key={`${row.outcome}-${row.failure_reason}-${row.credit_action}`}><td>{row.outcome.replaceAll('_', ' ')}</td><td>{row.failure_reason?.replaceAll('_', ' ') || '—'}</td><td>{row.credit_action}</td><td>{row.attempts}</td></tr>)}</tbody></table> : <p className="analytics-note">No write-ahead generation records in this window yet.</p>}
       </section>
       <section className="analytics-breakdowns">
         <h2>Search Console</h2>

@@ -6,6 +6,7 @@ const env = { APP_SECRET: 'test-secret-only-do-not-use-in-production-12345' };
 test('rejects arbitrary expensive dimensions, extra fields and invalid seeds', () => {
  assert.equal(generationSchema.safeParse({ prompt:'A forest',size:'square',mode:'text' }).success,true);
  assert.equal(generationSchema.safeParse({ prompt:'A forest',size:'square',mode:'text',guidanceScale:3,steps:50 }).success,true);
+ assert.equal(generationSchema.safeParse({ intentId:'550e8400-e29b-41d4-a716-446655440000',prompt:'A forest',size:'square',mode:'text' }).success,true);
  for (const extra of [{size:'4k'},{seed:-1},{seed:2.4},{seed:2147483648},{guidanceScale:0},{guidanceScale:7},{steps:3},{steps:51},{steps:4.5},{num_images:100},{prompt:'  '},{prompt:'x'.repeat(6001)}]) assert.equal(generationSchema.safeParse({prompt:'A forest',size:'square',mode:'text',...extra}).success,false);
  assert.equal(Math.max(...Object.values(sizes).map(s=>s.width*s.height)),1048576);
 });

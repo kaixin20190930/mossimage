@@ -2,6 +2,7 @@ import type { Env } from './env';
 import { configured } from '../lib/server';
 import { generate } from './generate';
 import { status } from './status';
+import { generationIntent } from './intent';
 import { account, logout, requestCode, verifyCode, authConfigured, paymentsConfigured } from './account';
 import { createCheckout, createPortal, stripeWebhook } from './billing';
 import { analyticsSummary, recordAnalytics } from './analytics';
@@ -39,7 +40,7 @@ export default {
     }
     const path = url.pathname.replace(/\/+$/, '') || '/';
     const apiMethods: Record<string, string> = {
-      '/api/config': 'GET', '/api/generate': 'POST', '/api/generate/status': 'GET',
+      '/api/config': 'GET', '/api/generate': 'POST', '/api/generate/status': 'GET', '/api/generate/intent': 'GET',
       '/api/account': 'GET', '/api/auth/request': 'POST', '/api/auth/verify': 'POST',
       '/api/auth/logout': 'POST', '/api/billing/checkout': 'POST',
       '/api/billing/portal': 'POST', '/api/stripe/webhook': 'POST',
@@ -56,6 +57,7 @@ export default {
         const handlers: Record<string, () => Promise<Response>> = {
           '/api/generate': () => generate(request, env),
           '/api/generate/status': () => status(request, env),
+          '/api/generate/intent': () => generationIntent(request, env),
           '/api/account': () => account(request, env),
           '/api/auth/request': () => requestCode(request, env),
           '/api/auth/verify': () => verifyCode(request, env),
