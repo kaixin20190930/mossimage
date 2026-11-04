@@ -5,6 +5,7 @@ import { EditorialPage } from '@/components/editorial-page';
 import { landingPages } from '@/lib/landing-pages';
 import { pricingPlans } from '@/lib/plans';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
+import { creditRestorePolicy } from '@/lib/generation-policy';
 
 const page = landingPages.free;
 const canonical = 'https://mossimage.run/free/';
@@ -62,7 +63,7 @@ export default function FreePage() {
           {free.features.map(feature => <span key={feature}><Check size={15}/>{feature}</span>)}
         </div>
         <p className="small-note">Generation uses a shared service budget and cooldown. Availability can pause temporarily when the daily budget is reached.</p>
-        <p className="small-note">When the service confirms a technical failure or safety rejection, the reserved credit is restored automatically. If a submitted job is still being checked, the studio lets you check that original job before starting another.</p>
+        <p className="small-note">{creditRestorePolicy} If a submitted job is still being checked, the studio lets you check that original job before starting another.</p>
       </section>
 
       <section id="start">

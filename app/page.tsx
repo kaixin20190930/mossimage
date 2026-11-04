@@ -4,6 +4,7 @@ import { Braces, Type, Sprout } from 'lucide-react';
 import { Studio } from '@/components/studio';
 import { Pricing } from '@/components/pricing';
 import { homeMetadata } from '@/lib/content';
+import { creditRestorePolicy } from '@/lib/generation-policy';
 import { homeStructuredData, JsonLd } from '@/lib/structured-data';
 
 export const metadata: Metadata = { ...homeMetadata, alternates: { canonical: '/' }, openGraph: { ...homeMetadata, url: '/', type: 'website' } };
@@ -22,7 +23,7 @@ const guides = [
 const faqs = [
   ['What is MOSS-Image?','MOSS-Image is a 5B-parameter image-generation model family from OpenMOSS, with Base and SFT checkpoints. You can explore its official code and model cards through our guides. This site is independently operated.'],
   ['Is the generator free?','Yes. A verified account starts with three images. Credit packs and subscriptions add more images when you need them, subject to the shared daily service budget.'],
-  ['What happens when a generation fails?','One image credit is reserved when a request starts. A technical failure, missing image, or safety block restores that credit automatically. Artistic variation is part of image generation, so review every result.'],
+  ['What happens when a generation fails?',`${creditRestorePolicy} Artistic variation is part of image generation, so review every result.`],
   ['Can I control the layout?','Yes. JSON layout mode accepts a scene description and bounding boxes for text and objects. It validates your structure and canvas bounds before submitting.'],
   ['Where do my prompts and images go?','Prompts and settings are sent to fal.ai for generation. Completed images are copied to private Cloudflare R2 storage and require your signed-in account to access. You can permanently delete saved images from your account; see the Privacy page for details.'],
 ];

@@ -36,6 +36,7 @@ type GenerationBody = {
 
 type PendingGeneration = { intentId: string; token?: string };
 const pendingGenerationKey = 'moss-pending-generation';
+const statusRetryDelays = [0, 2000, 4000, 8000];
 
 type GenerationIssue = {
   kind: 'refunded' | 'uncertain' | 'generic';
@@ -210,7 +211,19 @@ export function Studio() {
     if (next.kind === 'refunded') track('refunded_retry_cta_view', { errorCode: next.code });
   }
 
-  async function generate(isRetry = false) {
+  async function fetchGenerationStatus(token: string) {
+    for (let attempt = 0; attempt < statusRetryDelays.length; attempt++) {
+      if (statusRetryDelays[attempt]) await new Promise(resolve => setTimeout(resolve, statusRetryDelays[attempt]));
+      try {
+        return await fetch(`/api/generate/status/?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(15000) });
+      } catch (error) {
+        if (attempt === statusRetryDelays.length - 1) throw error;
+      }
+    }
+    throw new Error('Generation status could not be checked.');
+  }
+
+  async function generate(retryErrorCode?: ErrorCode) {
     setError('');
     setIssue(undefined);
     if (model === 'base') {
@@ -238,7 +251,7 @@ export function Studio() {
       return;
     }
 
-    if (isRetry) track('generation_retry', { errorCode: 'generation_failed_refunded' });
+    if (retryErrorCode) track('generation_retry', { errorCode: retryErrorCode });
     track('generate_submit', { mode, size, source: generationSource.current });
     const intentId = crypto.randomUUID();
     savePending({ intentId });
@@ -282,9 +295,9 @@ export function Studio() {
         await new Promise(resolve => setTimeout(resolve, 3000));
         let poll: Response;
         try {
-          poll = await fetch(`/api/generate/status/?token=${encodeURIComponent(job.token || '')}`, { signal: AbortSignal.timeout(15000) });
+          poll = await fetchGenerationStatus(job.token || '');
         } catch {
-          throw new GenerationRequestError({ code: 'generation_status_uncertain' }, 'This generation is still being checked. Avoid submitting it again immediately so you are not charged twice.');
+          throw new GenerationRequestError({ code: 'generation_poll_uncertain' }, 'This generation is still being checked. Avoid submitting it again immediately so you are not charged twice.');
         }
         const result = await poll.json() as GenerationBody;
         if (!poll.ok) throw new GenerationRequestError(result, 'Could not check your generation.');
@@ -338,7 +351,7 @@ export function Studio() {
           markPreviewUsed(false);
           setPreviewComplete(false);
         }
-        showIssue({ kind: 'refunded', code: 'generation_failed_refunded', message: generationError.message });
+        showIssue({ kind: 'refunded', code: generationError.code, message: generationError.message });
         window.dispatchEvent(new Event('moss-account-change'));
       } else if (generationError.code === 'generation_status_uncertain') {
         showIssue({ kind: 'uncertain', code: generationError.code, message: generationError.message });
@@ -376,7 +389,7 @@ export function Studio() {
         }
         savePending({ ...pending, token });
       }
-      const response = await fetch(`/api/generate/status/?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(15000) });
+      const response = await fetchGenerationStatus(token);
       const result = await response.json() as GenerationBody;
       if (!response.ok) throw new GenerationRequestError(result, 'Could not check your generation.');
       if (result.status === 'COMPLETED') {
@@ -527,7 +540,7 @@ export function Studio() {
         {issue && <div className={`generation-notice ${issue.kind}`} role="alert">
           <strong>{issue.kind === 'refunded' ? 'This generation didn’t complete.' : issue.kind === 'uncertain' ? 'This generation is still being checked.' : 'Generation could not continue.'}</strong>
           <p>{issue.kind === 'refunded' ? (signedIn === false ? 'This preview did not count toward your daily limit. Adjust the prompt and try again.' : 'Your credit has been restored. Adjust your prompt or canvas shape and try again.') : issue.message}</p>
-          {issue.kind === 'refunded' && <div><button type="button" onClick={() => void generate(true)}>Try again</button><button type="button" className="secondary" onClick={changeCanvasShape}>Change canvas shape</button></div>}
+          {issue.kind === 'refunded' && <div><button type="button" onClick={() => void generate(issue.code)}>Try again</button><button type="button" className="secondary" onClick={changeCanvasShape}>Change canvas shape</button></div>}
           {issue.kind === 'uncertain' && <button type="button" className="secondary" onClick={() => void checkPendingStatus()} disabled={busy}>Check status</button>}
         </div>}
         {upgradeVisible && <div className="upgrade-card" aria-live="polite">
