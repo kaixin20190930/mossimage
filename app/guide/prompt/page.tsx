@@ -5,10 +5,13 @@ import { EditorialPage } from '@/components/editorial-page';
 import { PromptBuilder } from '@/components/prompt-builder';
 import { PromptExample } from '@/components/prompt-example';
 import { featuredImageHref, featuredImages } from '@/lib/featured-images';
-import { landingPages, publishedIsoDate } from '@/lib/landing-pages';
+import { contentLastModified } from '@/lib/content-dates';
+import { landingPages, publishedDate, publishedIsoDate } from '@/lib/landing-pages';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const page = landingPages.prompt;
+const modifiedDate = contentLastModified[page.slug];
+const modifiedLabel = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${modifiedDate}T00:00:00Z`));
 const canonical = 'https://mossimage.run/guide/prompt/';
 const byId = (id: string) => featuredImages.find(image => image.id === id)!;
 const menu = byId('bilingual-menu');
@@ -20,6 +23,7 @@ const bookshop = byId('bookshop');
 
 const productPhoto = 'A premium amber glass perfume bottle on a pale limestone pedestal, minimal studio product photography, warm beige background, soft diffused light from the upper left, a gentle shadow falling to the right, centered composition, realistic glass reflections, refined editorial advertising style, 1024×1024';
 const portrait = 'An editorial portrait of a ceramic artist in a sunlit workshop, waist-up framing, subject placed on the right third, shelves of handmade vessels softly blurred behind her, late-afternoon window light, warm earth tones, natural skin texture, quiet documentary photography, 1024×1024';
+const coffeePosterDraft = 'A minimal cream-colored coffee poster with a small cup illustration in the lower half. At the top, a large dark-brown heading reads "晨光咖啡". Directly below it, a smaller subtitle reads "MORNING COFFEE". Leave generous space between the two lines. Use simple bold lettering, a warm brown and cream palette, and soft morning light.';
 
 const studioHref = (prompt: string) => `/?prompt=${encodeURIComponent(prompt)}#studio`;
 
@@ -33,6 +37,7 @@ export const metadata: Metadata = {
 const sections = [
   { id: 'builder', title: 'Build a prompt' },
   { id: 'proven', title: 'Proven prompts and writing tips' },
+  { id: 'refine', title: 'Refine a failed text prompt' },
   { id: 'results', title: 'See the prompts as real outputs' },
   { id: 'known-limitations', title: 'Known limitations' },
 ] as const;
@@ -48,7 +53,7 @@ export default function PromptGuidePage() {
         url: canonical,
         description: page.description,
         datePublished: publishedIsoDate,
-        dateModified: '2026-10-31',
+        dateModified: modifiedDate,
         isPartOf: { '@id': 'https://mossimage.run/#website' },
       },
       breadcrumbStructuredData([
@@ -68,7 +73,7 @@ export default function PromptGuidePage() {
       intro="This MOSS-Image prompting guide starts with a builder: combine a subject, style, lighting, and visible text, then copy the prompt or open it in the studio."
       sections={sections}
       bottomLink={{ href: '/guide/', label: 'All guides' }}
-      publishedDate="October 26, 2026"
+      publishedDate={`${publishedDate} · Updated ${modifiedLabel}`}
     >
       <section id="builder" className="builder-section">
         <PromptBuilder/>
@@ -111,6 +116,21 @@ export default function PromptGuidePage() {
       </section>
         </div>
       </details>
+
+      <section id="refine">
+        <h2>Refine a MOSS-Image prompt when text goes wrong</h2>
+        <p>Diagnose one failure before rewriting the whole scene. If a headline is misspelled, shorten and quote that line. If the words are correct but crowded, simplify the surrounding scene and give the headline more space. If placement keeps drifting, move the text into separate JSON regions.</p>
+        <p><strong>Vague request:</strong> “Make a stylish bilingual coffee poster with lots of menu details.” This leaves the model to invent the wording, hierarchy, and amount of text.</p>
+        <p><strong>More specific request:</strong> use the draft below to separate exact copy from visual instructions. It is a writing example, not a tested generation.</p>
+        <PromptExample label="Draft: a short bilingual coffee poster" prompt={coffeePosterDraft} href={studioHref(coffeePosterDraft)}/>
+        <ol>
+          <li>Save the original prompt, result, seed, model, canvas size, steps, and CFG. Keep those settings fixed while comparing prompt revisions; a seed alone does not reproduce an image across different models or workflows.</li>
+          <li>Change only the instruction tied to the failure. For spelling, remove extra copy and retain the exact quoted headline. For crowding, adjust spacing without changing the headline or lighting.</li>
+          <li>Inspect every Chinese character, English word, and punctuation mark at full size. Keep a revision only if it fixes the target issue without losing another required detail.</li>
+          <li>Once the wording works, add one subtitle or detail at a time. If repeated attempts still miss exact lettering, place approved text in a design tool before printing or publishing.</li>
+        </ol>
+        <p>For placement problems, follow the <Link href="/guide/json-layout/">MOSS-Image JSON prompt layout reference</Link>. To compare wording against recorded outputs, use the <Link href="/blog/best-moss-image-prompts-examples-seeds/">MOSS-Image prompt examples with seeds</Link>.</p>
+      </section>
 
       <section id="results">
         <h2>These prompts produced real images</h2>

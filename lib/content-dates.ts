@@ -5,7 +5,7 @@
 export const contentLastModified: Record<string, string> = {
   '': '2026-10-31',
   gallery: '2026-10-31',
-  'guide/prompt': '2026-10-31',
+  'guide/prompt': '2026-11-07',
   'guide/json-layout': '2026-10-28',
   'json-layout': '2026-10-31',
   'moss-image-ai': '2026-10-26',

@@ -137,7 +137,7 @@ export default function ChineseImagePage() {
         <Link className="inline-action" href="/?mode=layout#studio">Open the studio in JSON mode </Link>
         <div className="related-links">
           <Link href="/gallery/">View real MOSS-Image creations</Link>
-          <Link href="/guide/prompt/">Prompt writing tips </Link>
+          <Link href="/guide/prompt/">MOSS-Image prompting tips for bilingual text</Link>
           <Link href="/compare/flux/">Compare with FLUX </Link>
         </div>
       </section>

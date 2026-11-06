@@ -63,7 +63,7 @@ export default function TextInImageGeneratorPage() {
         <h2>Put exact wording in quotation marks</h2>
         <p>Describe the scene first, then quote every line that needs to appear. Keep the hierarchy explicit: name the heading, subtitle, item rows, prices, and footer separately. Shorter text blocks are easier to inspect and revise than a dense paragraph.</p>
         <div className="code-block"><pre><code>{examples[0].prompt}</code></pre></div>
-        <p><Link className="inline-text-link" href="/guide/prompt/">See more copy-ready prompt examples</Link></p>
+        <p><Link className="inline-text-link" href="/guide/prompt/#proven">MOSS Image prompt examples for text in images</Link></p>
       </section>
 
       <section id="layout">
