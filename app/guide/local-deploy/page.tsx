@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
-const title = 'MOSS-Image Local Install — Run on Your GPU, No Cloud';
-const description = 'Install MOSS-Image locally with native ComfyUI or the optional HF-directory loader. Compare model files, memory options, and matching workflows.';
+const title = 'How to Install MOSS-Image Locally in ComfyUI';
+const description = 'Install MOSS-Image with native ComfyUI or MOSSImageHFLoader. Place the correct model files, fix node and model_path errors, and run Base or SFT locally.';
 const canonical = 'https://mossimage.run/guide/local-deploy/';
+const modifiedDate = contentLastModified['guide/local-deploy'];
 
 export const metadata: Metadata = {
   title,
@@ -33,6 +35,7 @@ export default function LocalDeployPage() {
         name: 'Install MOSS-Image with native ComfyUI support',
         description,
         url: canonical,
+        dateModified: modifiedDate,
         step: [
           { '@type': 'HowToStep', position: 1, name: 'Update ComfyUI', text: 'Use a current ComfyUI build that includes native MOSS-Image support and install its current dependencies.' },
           { '@type': 'HowToStep', position: 2, name: 'Download the model components', text: 'Download a matching MOSS-Image diffusion model, text encoder, and VAE from Comfy-Org.' },
@@ -58,12 +61,13 @@ export default function LocalDeployPage() {
       intro="Run MOSS-Image on your own hardware. Choose native ComfyUI support for a new setup, or use the optional HF-directory plugin when you need to load a complete local Diffusers model directory."
       sections={sections}
       bottomLink={{ href: '/comfyui/', label: 'ComfyUI setup overview' }}
-      publishedDate="October 26, 2026"
+      publishedDate="October 26, 2026 · Updated November 7, 2026"
     >
       <section id="choose">
         <h2>Choose one installation path</h2>
-        <p>The two paths use different model layouts, loader nodes, and sampling graphs. Import the workflow that belongs to the path you choose; replacing only the loader can change sampling behavior or leave the graph incomplete.</p>
-        <div className="comparison-table-wrap"><table><thead><tr><th>Path</th><th>Best for</th><th>Model format</th></tr></thead><tbody><tr><th>Native ComfyUI</th><td>New installations and current ComfyUI workflows</td><td>Separate ComfyUI-format diffusion model, text encoder, and VAE files</td></tr><tr><th>HF-directory plugin</th><td>Existing plugin workflows or direct loading of a local Diffusers directory</td><td>A complete directory containing transformer, text encoder, tokenizer, and VAE components</td></tr></tbody></table></div>
+        <p>The two paths use different model layouts, loader nodes, and sampling graphs. Start with native ComfyUI for a new installation. Choose MOSSImageHFLoader only when you already have a complete local Diffusers repository or an existing plugin workflow.</p>
+        <div className="comparison-table-wrap"><table><thead><tr><th>Path</th><th>Model files</th><th>Use it when</th><th>First thing to check</th></tr></thead><tbody><tr><th>Native ComfyUI</th><td>Separate diffusion model, text encoder, and VAE files</td><td>You are starting a new installation or use a current ComfyUI setup</td><td>Your ComfyUI build includes native MOSS-Image support</td></tr><tr><th>MOSSImageHFLoader</th><td>A complete Diffusers directory with <code>transformer/</code>, <code>text_encoder/</code>, <code>tokenizer/</code>, and <code>vae/</code></td><td>You already have the Diffusers repository on disk</td><td><code>model_path</code> points to the complete local directory</td></tr></tbody></table></div>
+        <p>Import the workflow that belongs to the path you choose. Replacing only the loader can change sampling behavior or leave the graph incomplete.</p>
         <p>If you only want to test SFT without managing model files or hardware, use the <Link href="/#studio">browser-based MOSS-Image generator</Link>.</p>
       </section>
 

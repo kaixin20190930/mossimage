@@ -22,7 +22,7 @@ test('search-intent pages expose the expected canonical records',()=>{
  assert.ok(landingPageMetadata.some(page=>page.slug==='compare/base-vs-sft'));
  assert.ok(!articles.some(page=>page.slug==='guide/base-vs-sft'));
  const prompt=landingPageMetadata.find(page=>page.slug==='guide/prompt');
- const comfyui=articles.find(page=>page.slug==='comfyui');
+ const comfyui=landingPageMetadata.find(page=>page.slug==='comfyui');
  assert.match(prompt?.title||'',/Prompt Guide/);
  assert.match(prompt?.title||'',/Prompting/);
  assert.match(prompt?.title||'',/Builder/);
@@ -31,11 +31,11 @@ test('search-intent pages expose the expected canonical records',()=>{
  assert.ok(landingPageMetadata.some(page=>page.slug==='json-layout'));
  assert.ok(landingPageMetadata.some(page=>page.slug==='moss-image-generator-online'));
  assert.ok(landingPageMetadata.some(page=>page.slug==='moss-image-ai'));
- const comfyuiCopy=comfyui?.sections.map(section=>`${section.title} ${section.text}`).join(' ')||'';
- assert.doesNotMatch(comfyuiCopy,/MOSSImageHFLoader/);
- assert.ok(comfyui?.relatedLinks?.some(link=>link.href==='/comfyui/mossimagehfloader/'&&/MOSSImageHFLoader/.test(link.label)));
+ assert.match(comfyui?.title||'',/Native vs MOSSImageHFLoader/);
+ const comfyuiSource=readFileSync(resolve('app/comfyui/page.tsx'),'utf8');
+ assert.match(comfyuiSource,/href=\"\/comfyui\/mossimagehfloader\/\"/);
  const workflowsSource=readFileSync(resolve('app/workflows/page.tsx'),'utf8');
- assert.equal(workflowsSource.match(/MOSSImageHFLoader/g)?.length,1);
+ assert.equal(workflowsSource.match(/MOSSImageHFLoader/g)?.length,2);
 });
 test('featured generations have stable unique records and optimized local assets',()=>{
  assert.equal(featuredImages.length,31);

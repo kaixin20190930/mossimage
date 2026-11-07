@@ -104,6 +104,7 @@ export default function PromptGuidePage() {
       <section id="text">
         <h2>Write exact Chinese and English text into the image</h2>
         <p>Put every required phrase in quotation marks, describe its position and visual treatment, and keep the wording short. Generated lettering still needs proofreading before publication.</p>
+        <p>Use the <Link href="/text-in-image-generator/">AI text-in-image generator</Link> when you want recorded menu, label, and poster outputs plus a direct path into the studio.</p>
         <PromptExample label="Bilingual café menu" prompt={menu.prompt} href={featuredImageHref(menu.id)}/>
         <PromptExample label="Chinese and English concert poster" prompt={jazz.prompt} href={featuredImageHref(jazz.id)}/>
       </section>

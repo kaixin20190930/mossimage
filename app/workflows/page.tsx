@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowDownToLine } from 'lucide-react';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { landingPages } from '@/lib/landing-pages';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
@@ -9,6 +10,7 @@ const page = landingPages.workflows;
 const canonical = 'https://mossimage.run/workflows/';
 const pluginUpstream = 'https://github.com/OpenMOSS/MOSS-Image/blob/main/comfyui/moss-image/example_workflows/moss-image.json';
 const nativeUpstream = 'https://github.com/Comfy-Org/workflow_templates/blob/main/templates/image_moss_image_t2i.json';
+const modifiedDate = contentLastModified.workflows;
 
 export const metadata: Metadata = {
   title: page.title,
@@ -41,7 +43,7 @@ export default function WorkflowsPage() {
         programmingLanguage: 'JSON',
         runtimePlatform: 'ComfyUI',
         softwareVersion: '0.4',
-        dateModified: '2026-10-31',
+        dateModified: modifiedDate,
         author: { '@type': 'Organization', name: 'Comfy-Org', url: 'https://github.com/Comfy-Org' },
       },
       {
@@ -55,7 +57,7 @@ export default function WorkflowsPage() {
         programmingLanguage: 'JSON',
         runtimePlatform: 'ComfyUI',
         softwareVersion: '0.4',
-        dateModified: '2026-10-31',
+        dateModified: modifiedDate,
         author: { '@type': 'Organization', name: 'OpenMOSS', url: 'https://github.com/OpenMOSS/MOSS-Image' },
       },
       breadcrumbStructuredData([
@@ -74,11 +76,16 @@ export default function WorkflowsPage() {
       intro="Download a matching workflow for native ComfyUI or the optional HF-directory plugin. Each file is mirrored from its official source and labeled with the model format and loader it expects."
       sections={sections}
       bottomLink={{ href: '/comfyui/', label: 'Read the ComfyUI guide' }}
-      publishedDate="October 26, 2026"
+      publishedDate="October 26, 2026 · Updated November 7, 2026"
     >
       <section id="download">
         <h2>Download a workflow that matches your installation</h2>
         <p>Native ComfyUI and the optional HF-directory plugin use different model files and sampling graphs. Import one complete workflow and keep its matching loader path.</p>
+        <div className="comparison-table-wrap"><table><thead><tr><th>Download</th><th>Loader and model files</th><th>Checkpoint</th><th>Choose it when</th></tr></thead><tbody>
+          <tr><th>Native ComfyUI workflow</th><td>Built-in loaders with separate diffusion model, text encoder, and VAE files</td><td>SFT</td><td>You are starting a current ComfyUI setup</td></tr>
+          <tr><th>HF-directory workflow</th><td><code>MOSSImageHFLoader</code> with a complete local Diffusers directory</td><td>Base</td><td>You already use the optional plugin path</td></tr>
+        </tbody></table></div>
+        <p className="small-note">These are the two files available on this page. Each includes its own sampling graph; do not switch paths by replacing only the loader node.</p>
         <div className="download-card">
           <div>
             <strong>Native ComfyUI SFT workflow</strong>
@@ -100,7 +107,7 @@ export default function WorkflowsPage() {
           </a>
         </div>
         <p className="small-note">Uses a complete local Base Diffusers directory and requires the <Link href="/comfyui/mossimagehfloader/"><code>MOSSImageHFLoader</code> plugin</Link>. Open the node guide for installation, the <code>model_path</code> format, and loader-specific errors. Compare this mirror with the <a href={pluginUpstream} target="_blank" rel="noreferrer">upstream plugin file</a>.</p>
-        <p className="small-note">Both files were refreshed from their official sources on October 26, 2026.</p>
+        <p className="small-note">Both files were refreshed from their official sources on October 26, 2026. The download selector was clarified on November 7, 2026.</p>
       </section>
 
       <section id="inside">

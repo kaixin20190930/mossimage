@@ -10,7 +10,7 @@ import { homeStructuredData, JsonLd } from '@/lib/structured-data';
 export const metadata: Metadata = { ...homeMetadata, alternates: { canonical: '/' }, openGraph: { ...homeMetadata, url: '/', type: 'website' } };
 
 const features = [
-  { number: '01 /', title: 'Words that belong in the picture.', text: 'Explore Chinese and English lettering for posters, labels, and visual stories. Always proofread generated text before sharing.', href: '/chinese-ai-image-generator/', link: 'Chinese text guide' },
+  { number: '01 /', title: 'Words that belong in the picture.', text: 'Create posters, labels, and visual stories with Chinese or English lettering. Always proofread generated text before sharing.', href: '/text-in-image-generator/', link: 'Open the text-in-image generator' },
   { number: '02 /', title: 'A place for every little detail.', text: 'Switch to JSON layout to describe where text and objects should go. A more intentional starting point for your composition.', href: '/guide/json-layout/', link: 'JSON Layout guide' },
   { number: '03 /', title: 'Room to make it your own.', text: 'Start in the browser, then explore official weights and ComfyUI workflows when you want a more hands-on creative process.' },
 ];

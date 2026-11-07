@@ -96,6 +96,7 @@ export default function ChineseImagePage() {
           </table>
         </div>
         <p>Keep required words in quotation marks. Describe whether they belong on a sign, label, poster, menu, or screen, then add the intended position and lettering style. Short, distinct strings are easier to inspect than a paragraph.</p>
+        <p>To start from recorded poster, label, and menu outputs, open the <Link href="/text-in-image-generator/">AI text-in-image generator and examples</Link>.</p>
       </section>
 
       <section id="bilingual">

@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { featuredImageById, featuredImageHref } from '@/lib/featured-images';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const title = 'AI Text in Image Generator — Readable Posters & Labels';
 const description = 'Create posters, labels, and menu concepts with in-image wording. Explore bilingual text, optional JSON layouts, real examples, and proofreading guidance.';
 const canonical = 'https://mossimage.run/text-in-image-generator/';
+const modifiedDate = contentLastModified['text-in-image-generator'];
 const examples = ['m1', 'm5', 'm6'].map(id => featuredImageById(id)!);
 
 export const metadata: Metadata = {
@@ -18,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 const sections = [
+  { id: 'create', title: 'Create an image' },
   { id: 'examples', title: 'Real examples' },
   { id: 'write', title: 'Write the prompt' },
   { id: 'layout', title: 'Guide the layout' },
@@ -29,7 +32,7 @@ export default function TextInImageGeneratorPage() {
   const structuredData = {
     '@context': 'https://schema.org',
     '@graph': [
-      { '@type': 'WebPage', '@id': `${canonical}#page`, name: title, description, url: canonical, isPartOf: { '@id': 'https://mossimage.run/#website' }, dateModified: '2026-10-26' },
+      { '@type': 'WebPage', '@id': `${canonical}#page`, name: title, description, url: canonical, isPartOf: { '@id': 'https://mossimage.run/#website' }, dateModified: modifiedDate },
       breadcrumbStructuredData([
         { name: 'MOSS-Image Generator', url: 'https://mossimage.run/' },
         { name: 'Text in Image Generator', url: canonical },
@@ -46,8 +49,13 @@ export default function TextInImageGeneratorPage() {
       intro="Create visual concepts where menu items, label copy, event details, and Chinese or English wording are part of the generated image. MOSS-Image SFT is built for text-led prompts, while every result still needs proofreading before publication."
       sections={sections}
       bottomLink={{ href: '/use-cases/', label: 'Browse use cases' }}
-      publishedDate="October 26, 2026"
+      publishedDate="October 26, 2026 · Updated November 7, 2026"
     >
+      <section id="create" className="prompt-guide-start">
+        <div><strong>Create a text-led image now</strong><span>Open a tested café prompt, replace the visible words with your own, and generate in the browser. Three starter images are available after email verification.</span></div>
+        <Link className="inline-action" href={featuredImageHref('m1')}>Open the text image generator</Link>
+      </section>
+
       <section id="examples">
         <h2>Real text-in-image examples</h2>
         <p>These are first-run MOSS-Image SFT outputs from October 26, 2026. They were generated at 1024×1024 with 50 steps, CFG 3, prompt expansion disabled, and no cropping or retouching.</p>

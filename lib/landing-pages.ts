@@ -2,6 +2,12 @@ export const publishedDate = 'October 23, 2026';
 export const publishedIsoDate = '2026-10-23';
 
 export const landingPages = {
+  comfyui: {
+    slug: 'comfyui',
+    title: 'MOSS Image ComfyUI Setup — Native vs MOSSImageHFLoader',
+    description: 'Set up MOSS-Image in ComfyUI. Choose native loaders or MOSSImageHFLoader, match the correct model files and workflow, and fix common node errors.',
+    heading: 'MOSS Image ComfyUI Setup',
+  },
   prompt: {
     slug: 'guide/prompt',
     title: 'MOSS Image Prompt Guide — Prompting Tips, Builder, Examples',
