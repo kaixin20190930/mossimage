@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { landingPages, publishedIsoDate } from '@/lib/landing-pages';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const page = landingPages.baseVsSft;
 const canonical = 'https://mossimage.run/compare/base-vs-sft/';
+const modifiedDate = contentLastModified['compare/base-vs-sft'];
 
 export const metadata: Metadata = {
   title: page.title,
@@ -34,7 +36,7 @@ export default function BaseVsSftPage() {
         headline: page.heading,
         description: page.description,
         datePublished: publishedIsoDate,
-        dateModified: '2026-10-31',
+        dateModified: modifiedDate,
         mainEntityOfPage: canonical,
         author: { '@type': 'Organization', name: 'Moxion Labs LLC', url: 'https://mossimage.run/' },
         publisher: { '@id': 'https://mossimage.run/#organization' },
@@ -56,6 +58,7 @@ export default function BaseVsSftPage() {
       intro="Base preserves the foundation checkpoint for evaluation, LoRA training, and custom post-training. SFT starts from Base and adds supervised fine-tuning for a more ready-to-use generation experience. Both support natural-language prompts, tag sequences, bilingual text, and JSON layouts."
       sections={sections}
       bottomLink={{ href: '/compare/', label: 'All comparisons' }}
+      publishedDate="October 23, 2026 · Updated November 7, 2026"
     >
       <section id="answer">
         <h2>The short answer</h2>
@@ -63,6 +66,7 @@ export default function BaseVsSftPage() {
           <strong>Choose SFT for direct image generation. Choose Base when you want the un-post-trained foundation checkpoint for evaluation, LoRA training, or your own tuning work.</strong>
           <p>SFT uses the same architecture and inference pipeline as Base. It is a supervised fine-tuned descendant rather than a separate model family.</p>
         </div>
+        <p>Searches for “MOSS-Image SFT vs Base,” “Base or SFT,” and “Base vs SFT” all refer to these two checkpoints in the same MOSS-Image model family.</p>
         <p>OpenMOSS shows SFT producing clearer text grouping and a more organized whiteboard layout in its published comparison. That is useful evidence for that example, not a promise that SFT wins every prompt. Test the scenes, lettering, and layouts that matter to your work.</p>
       </section>
 

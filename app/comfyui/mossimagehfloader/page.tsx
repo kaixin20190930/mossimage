@@ -1,11 +1,27 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const title = 'MOSSImageHFLoader — Install the MOSS-Image ComfyUI Node';
 const description = 'Learn what MOSSImageHFLoader does, install the optional HF-directory plugin, point it at a complete MOSS-Image model directory, and fix common loading errors.';
 const canonical = 'https://mossimage.run/comfyui/mossimagehfloader/';
+const modifiedDate = contentLastModified['comfyui/mossimagehfloader'];
+const faqItems = [
+  {
+    question: 'Why does MOSSImageHFLoader not appear in ComfyUI?',
+    answer: 'Confirm that ComfyUI/custom_nodes/moss-image/ resolves to the official node directory. Fully restart ComfyUI and inspect the startup log for API or dependency errors.',
+  },
+  {
+    question: 'Why is model_path invalid or a file missing?',
+    answer: 'Point model_path to the parent directory containing transformer, text_encoder, tokenizer, and vae, not to a safetensors file or an individual component folder. Confirm that the ComfyUI process can read the path.',
+  },
+  {
+    question: 'Does MOSSImageHFLoader support INT8?',
+    answer: 'No. INT8 is not a weight_dtype choice in this node. Official quantized single-file models belong to the native ComfyUI path; MOSSImageHFLoader exposes BF16, FP32, and FP8 casting choices alongside its default mode.',
+  },
+] as const;
 
 export const metadata: Metadata = {
   title,
@@ -20,7 +36,7 @@ const sections = [
   { id: 'install', title: 'Install the plugin' },
   { id: 'configure', title: 'Configure model_path' },
   { id: 'options', title: 'Node options' },
-  { id: 'troubleshooting', title: 'Troubleshooting' },
+  { id: 'troubleshooting', title: 'FAQ and troubleshooting' },
 ] as const;
 
 export default function MossImageHfLoaderPage() {
@@ -35,7 +51,7 @@ export default function MossImageHfLoaderPage() {
         url: canonical,
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Windows, macOS, Linux',
-        dateModified: '2026-10-31',
+        dateModified: modifiedDate,
         isAccessibleForFree: true,
         license: 'https://www.apache.org/licenses/LICENSE-2.0',
         sameAs: 'https://github.com/OpenMOSS/MOSS-Image/tree/main/comfyui/moss-image',
@@ -45,6 +61,15 @@ export default function MossImageHfLoaderPage() {
         { name: 'ComfyUI', url: 'https://mossimage.run/comfyui/' },
         { name: 'MOSSImageHFLoader', url: canonical },
       ]),
+      {
+        '@type': 'FAQPage',
+        '@id': `${canonical}#faq`,
+        mainEntity: faqItems.map(item => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer },
+        })),
+      },
     ],
   };
 
@@ -57,7 +82,7 @@ export default function MossImageHfLoaderPage() {
       intro="MOSSImageHFLoader is the optional ComfyUI node for loading MOSS-Image from a complete local Hugging Face Diffusers directory. New installations can usually use native ComfyUI support instead."
       sections={sections}
       bottomLink={{ href: '/workflows/', label: 'Download matching workflows' }}
-      publishedDate="October 26, 2026"
+      publishedDate="October 26, 2026 · Updated November 7, 2026"
     >
       <section id="what-it-does">
         <h2>What MOSSImageHFLoader does</h2>
@@ -104,9 +129,8 @@ export default function MossImageHfLoaderPage() {
       </section>
 
       <section id="troubleshooting">
-        <h2>Troubleshooting</h2>
-        <h3>The node does not appear</h3><p>Confirm that <code>ComfyUI/custom_nodes/moss-image/</code> resolves to the official node directory. Fully restart ComfyUI and inspect the startup log for API or dependency errors.</p>
-        <h3>model_path is invalid or a file is missing</h3><p>Point to the parent directory containing all four component folders, not to a safetensors file or an individual component folder. Confirm that the ComfyUI process can read the path.</p>
+        <h2>MOSSImageHFLoader FAQ and troubleshooting</h2>
+        {faqItems.map(item => <div key={item.question}><h3>{item.question}</h3><p>{item.answer}</p></div>)}
         <h3>The workflow runs out of memory</h3><p>Reduce canvas dimensions, try a supported FP8 mode when suitable for your hardware, or set <code>text_device</code> to CPU. The best option depends on GPU support and the current ComfyUI memory manager.</p>
         <h3>The output differs from the online studio</h3><p>The online studio submits to a hosted SFT endpoint with 50 inference steps. Its infrastructure and numerical precision are controlled by the provider. The plugin scheduler also differs from the standalone pipeline, so matching a seed does not guarantee a pixel-identical image.</p>
         <h3>Text is imperfect</h3><p>Shorten the requested wording, quote exact text, use explicit line breaks when needed, and proofread every result before publishing.</p>

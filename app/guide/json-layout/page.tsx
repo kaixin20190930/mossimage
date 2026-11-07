@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
+import { contentLastModified } from '@/lib/content-dates';
 import { layoutExample } from '@/lib/generation';
 import { landingPages } from '@/lib/landing-pages';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const page = landingPages.jsonLayout;
 const canonical = 'https://mossimage.run/guide/json-layout/';
+const modifiedDate = contentLastModified['guide/json-layout'];
 
 export const metadata: Metadata = {
   title: page.title,
@@ -34,6 +36,7 @@ export default function JsonLayoutPage() {
         url: canonical,
         name: page.title,
         description: page.description,
+        dateModified: modifiedDate,
         isPartOf: { '@id': 'https://mossimage.run/#website' },
         about: { '@type': 'Thing', name: 'MOSS-Image JSON layout prompts' },
       },
@@ -54,6 +57,7 @@ export default function JsonLayoutPage() {
       intro="Describe an image as structured data, give every text or object item an intended region, and open a validated example directly in the online studio."
       sections={sections}
       bottomLink={{ href: '/guide/', label: 'All guides' }}
+      publishedDate="October 23, 2026 · Updated November 7, 2026"
     >
       <div className="prompt-guide-start">
         <div><strong>Want a faster starting point?</strong><span>Pick a template, replace its text, and export valid layout JSON.</span></div>
@@ -113,6 +117,7 @@ export default function JsonLayoutPage() {
           <li>Expecting a generated result to reproduce typography with design-software precision.</li>
         </ul>
         <p>For bilingual designs, see the <Link href="/chinese-ai-image-generator/">Chinese AI image generator guide</Link> for a working Chinese and English layout example.</p>
+        <p>For posters, menus, and labels where readable wording is the main goal, start with the <Link href="/text-in-image-generator/">AI text-in-image generator</Link>, then add JSON regions when placement needs more control.</p>
       </section>
 
       <section id="try">

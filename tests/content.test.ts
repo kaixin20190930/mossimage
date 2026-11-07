@@ -36,6 +36,14 @@ test('search-intent pages expose the expected canonical records',()=>{
  assert.match(comfyuiSource,/href=\"\/comfyui\/mossimagehfloader\/\"/);
  const workflowsSource=readFileSync(resolve('app/workflows/page.tsx'),'utf8');
  assert.equal(workflowsSource.match(/MOSSImageHFLoader/g)?.length,2);
+  const baseVsSftSource=readFileSync(resolve('app/compare/base-vs-sft/page.tsx'),'utf8');
+  assert.match(baseVsSftSource,/SFT vs Base/);
+  assert.doesNotMatch(baseVsSftSource,/href=[{"']*\/guide\/base-vs-sft/);
+  const loaderSource=readFileSync(resolve('app/comfyui/mossimagehfloader/page.tsx'),'utf8');
+  assert.match(loaderSource,/'@type': 'FAQPage'/);
+  assert.match(loaderSource,/Does MOSSImageHFLoader support INT8/);
+  const jsonLayoutSource=readFileSync(resolve('app/guide/json-layout/page.tsx'),'utf8');
+  assert.match(jsonLayoutSource,/href="\/text-in-image-generator\/"/);
 });
 test('featured generations have stable unique records and optimized local assets',()=>{
  assert.equal(featuredImages.length,31);
