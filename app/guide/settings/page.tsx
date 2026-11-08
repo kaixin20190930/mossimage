@@ -18,14 +18,14 @@ const sections = [
 
 export default function SettingsGuidePage() {
   const data = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'TechArticle', '@id': `${canonical}#article`, headline: 'MOSS-Image settings', description, datePublished: '2026-10-27', dateModified: '2026-10-27', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC' } },
+    { '@type': 'TechArticle', '@id': `${canonical}#article`, headline: 'MOSS-Image settings', description, datePublished: '2026-10-27', dateModified: '2026-11-09', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC' } },
     breadcrumbStructuredData([{ name: 'MOSS-Image Generator', url: 'https://mossimage.run/' }, { name: 'Guides', url: 'https://mossimage.run/guide/' }, { name: 'Settings', url: canonical }]),
   ] };
   return <><JsonLd data={data}/><EditorialPage
     breadcrumbs={[{ label: 'MOSS-Image Generator', href: '/' }, { label: 'Guides', href: '/guide/' }, { label: 'Settings' }]}
     eyebrow="SETTINGS REFERENCE" title="MOSS-Image Settings: Get Clean Output"
     intro="Begin with a configuration published for the exact checkpoint and workflow you loaded. Then keep the seed fixed and change one variable at a time."
-    sections={sections} bottomLink={{ href: '/guide/', label: 'All guides' }} publishedDate="October 27, 2026">
+    sections={sections} bottomLink={{ href: '/guide/', label: 'All guides' }} publishedDate="October 27, 2026 · Updated November 9, 2026">
     <section id="reference"><h2>Known-good reference settings</h2>
       <div className="comparison-table-wrap"><table><thead><tr><th>Configuration</th><th>Steps / CFG</th><th>Sampler details</th><th>Use it for</th></tr></thead><tbody>
         <tr><th>Base standalone</th><td>At least 50; CFG 3 default, 3–6 recommended</td><td>Use the official user guide or matching pipeline defaults</td><td>Foundation-checkpoint evaluation and custom tuning</td></tr>
@@ -39,6 +39,18 @@ export default function SettingsGuidePage() {
       </div>
       <p className="small-note">Shift 5 and SLG layer 22 are local ComfyUI workflow controls. A shared URL may include them for reference, but the hosted studio does not send those two fields to fal.ai.</p>
       <p className="small-note">There is no single universal Turbo row: a four-step adapter and a fifteen-step adapter publish different CFG and scheduler recipes.</p>
+      <h3>Set these values, then stop changing them</h3>
+      <div className="comparison-table-wrap"><table><thead><tr><th>Control</th><th>Known-good HF-directory value</th></tr></thead><tbody>
+        <tr><th>Scheduler</th><td><code>sgm_uniform</code></td></tr>
+        <tr><th>Sampler</th><td>Flow-matching Euler</td></tr>
+        <tr><th>Steps</th><td>50</td></tr>
+        <tr><th>CFG</th><td>3 (test 3–6 only after the baseline works)</td></tr>
+        <tr><th>Shift</th><td>5</td></tr>
+        <tr><th>SLG negative branch</th><td>Single-layer index 22</td></tr>
+        <tr><th>Resolution</th><td>1024 × 1024</td></tr>
+        <tr><th>Seed</th><td>Fixed</td></tr>
+      </tbody></table></div>
+      <p>Run this baseline once, save the output, then change one variable per comparison. If you use the native ComfyUI workflow, keep the values saved in that downloaded graph instead of copying this HF-directory recipe into it.</p>
     </section>
     <section id="base-cfg"><h2>Why Base can look weak with a short prompt</h2>
       <p>The official Base guide recommends CFG 3–6 and says shorter prompts may benefit from higher values. Start at 3, keep the seed fixed, and move upward in small increments. Higher guidance is not automatically better: stop when contrast and prompt adherence improve without harsh or brittle detail.</p>

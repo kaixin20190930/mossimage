@@ -6,6 +6,7 @@ import { BlogMarkdown, blogHeadingId, type BlogMedia } from '@/components/blog-m
 import { EditorialPage } from '@/components/editorial-page';
 import { PromptShowcaseArticle } from '@/components/prompt-showcase-article';
 import { blogPostBySlug, blogPosts } from '@/lib/blog-posts';
+import { contentLastModified } from '@/lib/content-dates';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 export const dynamicParams = false;
@@ -82,6 +83,29 @@ function mediaFor(slug: string): readonly BlogMedia[] {
   return [];
 }
 
+const comfyUiErrorIndex = `### Error messages, in the words you will see them
+
+#### \"The value moss_image for load clip's type is not available.\"
+
+This is a loader-path mismatch, not a reason to move random files. For a native graph, update ComfyUI until the Load CLIP node offers type \`moss_image\`, put the text encoder in \`ComfyUI/models/text_encoders/\`, and re-import the current native workflow. For an HF-directory graph, do not use the stock Load CLIP node: use MOSSImageHFLoader and point \`model_path\` at the complete Diffusers directory containing \`transformer/\`, \`text_encoder/\`, \`tokenizer/\`, and \`vae/\`. Do not mix the two graphs.
+
+#### Missing nodes, red boxes, or MOSSImageHFLoader is absent
+
+First identify the graph type. A current native workflow requires a current ComfyUI build but no MOSS plugin. An HF-directory workflow requires the OpenMOSS custom node and a full restart. Check the startup log for the first import error before reinstalling anything.
+
+#### Output is pure noise
+
+Restore the complete workflow for the loader you chose. Native and HF-directory graphs use different sampling paths, so swapping only the loader can finish without an exception and still return noise. Test one 1024 × 1024 image with the graph's saved values, a fixed seed, no LoRA, and no quantization change.
+
+#### It worked yesterday, then an update broke it
+
+Open the last saved graph, read the startup and queue logs, and record the ComfyUI commit plus model filenames. Look for missing nodes, unloaded LoRA keys, precision warnings, or NaN values. Reproduce the failure with one fixed seed before changing CFG, steps, sampler, or model files.`;
+
+function markdownFor(post: (typeof blogPosts)[number]) {
+  if (post.slug !== 'moss-image-comfyui-guide') return post.body;
+  return post.body.replace('\n\n### Troubleshooting common issues', `\n\n${comfyUiErrorIndex}\n\n### Troubleshooting common issues`);
+}
+
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const post = blogPostBySlug(slug);
@@ -93,7 +117,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     '@graph': [
       {
         '@type': 'Article', '@id': `${canonical}#article`, headline: post.heading, description: post.description,
-        image: `https://mossimage.run${post.cover}`, datePublished: post.published, dateModified: '2026-10-31',
+        image: `https://mossimage.run${post.cover}`, datePublished: post.published, dateModified: contentLastModified[`blog/${post.slug}`] ?? post.published,
         mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC', url: 'https://mossimage.run/' },
         publisher: { '@id': 'https://mossimage.run/#organization' },
       },
@@ -104,7 +128,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       ]),
     ],
   };
-  const sections = post.sections.map(title => ({ id: blogHeadingId(title), title }));
+  const sectionTitles = post.slug === 'moss-image-comfyui-guide'
+    ? post.sections.flatMap(title => title === 'Troubleshooting common issues' ? ['Error messages, in the words you will see them', title] : [title])
+    : post.sections;
+  const sections = sectionTitles.map(title => ({ id: blogHeadingId(title), title }));
   return <>
     <JsonLd data={structuredData}/>
     <EditorialPage
@@ -114,13 +141,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       intro={post.excerpt}
       sections={sections}
       bottomLink={{ href: '/blog/', label: 'All articles' }}
-      publishedDate={post.publishedLabel}
+      publishedDate={post.slug === 'moss-image-comfyui-guide' ? `${post.publishedLabel} · Updated November 9, 2026` : post.publishedLabel}
     >
       <figure className="blog-cover"><div><Image src={post.cover} alt="" fill priority sizes="(max-width: 760px) 100vw, 720px"/></div></figure>
       {contextualLink && <p className="small-note">{contextualLink.note} <Link href={contextualLink.href}>{contextualLink.label}</Link>.</p>}
       {post.slug === 'best-moss-image-prompts-examples-seeds'
         ? <PromptShowcaseArticle/>
-        : <BlogMarkdown markdown={post.body} media={mediaFor(post.slug)}/>
+        : <BlogMarkdown markdown={markdownFor(post)} media={mediaFor(post.slug)}/>
       }
     </EditorialPage>
   </>;
