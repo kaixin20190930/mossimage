@@ -135,8 +135,14 @@ test('featured-on page is indexable server-rendered HTML with ordinary external 
 
 test('image editing guide states the hosted product boundary',()=>{
  const source=readFileSync(resolve('app/moss-image-edit/page.tsx'),'utf8');
+ const earlyAccess=readFileSync(resolve('app/image-editing-early-access/page.tsx'),'utf8');
  assert.match(source,/does not accept an uploaded image for editing/);
  assert.match(source,/ComfyUI pull request #17296/);
+ for(const page of [source,earlyAccess]){
+  assert.match(page,/models\/model_patches\//);
+  assert.match(page,/models\/loras\//);
+  assert.match(page,/Do not mix the two loading paths/);
+ }
  assert.doesNotMatch(source,/pixel-exact/);
 });
 

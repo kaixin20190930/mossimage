@@ -99,6 +99,7 @@ hf download OpenMOSS-Team/MOSS-Image-SFT \\
           <tr><th>Text Encode MOSS-Image Edit</th><td>Native reference-conditioning node</td><td>Current ComfyUI; set <code>edit_format</code> to <code>Moss-Image-Edit</code></td></tr>
           <tr><th>MOSS-Image Ostris Edit Model Patch</th><td>Lets ai-toolkit Edit LoRAs consume reference latents</td><td>Install its package in <code>ComfyUI/custom_nodes/</code></td></tr>
         </tbody></table></div>
+        <p><strong>Do not mix the two loading paths:</strong> a patch loaded with the native model-patch loader belongs in <code>models/model_patches/</code>; a LoRA weight loaded with a LoRA loader belongs in <code>models/loras/</code>.</p>
         <p>Do not move a complete Diffusers repository into the native single-file folders and expect the same graph to load it. The directory-based workflow keeps <code>adapter_config.json</code>, <code>adapter_model.safetensors</code>, and the Base or SFT snapshot in their downloaded structure.</p>
         <p>If an Ostris graph reads the prompt but ignores the reference, confirm that the Qwen3.5 checkpoint includes vision weights and that the model-patch node is connected after the LoRA loader.</p>
         <p><Link href="/image-editing-early-access/">Request hosted image-editing early access</Link> if you would rather not install the local workflow.</p>
