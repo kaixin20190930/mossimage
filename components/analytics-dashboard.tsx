@@ -30,6 +30,7 @@ type Summary = {
     path: string; checkedAt: string; lastSubmitted?: string; lastDownloaded?: string;
     isPending?: boolean; errors?: string; warnings?: string;
   }>;
+  editingInterest: { submissions: number; emails: number; style_change: number; selective_repaint: number; text_replacement: number; composition_change: number; other_choice: number };
 };
 
 const labels: Record<string, string> = {
@@ -55,6 +56,7 @@ const labels: Record<string, string> = {
   quick_start_rendered: 'Quick start rendered',
   quick_start_view: 'Quick starts shown',
   quick_start_select: 'Quick start selected',
+  editing_early_access_view: 'Editing early access viewed',
 };
 
 const funnel = [
@@ -126,6 +128,11 @@ export function AnalyticsDashboard() {
       <section className="analytics-funnel">
         <h2>Successful generations per person</h2>
         <div>{data.generationFrequency.map(row => <article key={row.bucket}><span>{row.bucket} successful {row.bucket === '1' ? 'generation' : 'generations'}</span><strong>{row.visitors}</strong><small>anonymous browser IDs</small></article>)}</div>
+      </section>
+      <section className="analytics-funnel">
+        <h2>Image-editing early access</h2>
+        <p className="analytics-note">Deduplicated by browser ID. Optional addresses are encrypted and are not shown in this report.</p>
+        <div><article><span>Valid submissions</span><strong>{data.editingInterest.submissions || 0}</strong><small>independent browser IDs</small></article><article><span>Invitation emails</span><strong>{data.editingInterest.emails || 0}</strong><small>encrypted addresses</small></article><article><span>Style change</span><strong>{data.editingInterest.style_change || 0}</strong></article><article><span>Selective repaint</span><strong>{data.editingInterest.selective_repaint || 0}</strong></article><article><span>Text replacement</span><strong>{data.editingInterest.text_replacement || 0}</strong></article><article><span>Composition change</span><strong>{data.editingInterest.composition_change || 0}</strong></article><article><span>Other</span><strong>{data.editingInterest.other_choice || 0}</strong></article></div>
       </section>
       <section className="analytics-breakdowns">
         <h2>Generation outcomes</h2>

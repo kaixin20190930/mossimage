@@ -7,7 +7,7 @@ import { contentLastModified } from '@/lib/content-dates';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const excluded = new Set(['guide/json-layout-generator', 'moss-image-generator-online', 'use-cases/menu']);
-  const slugs = [...new Set(['', ...articles.map(a=>a.slug), ...directories.map(d=>d.slug), ...landingPageMetadata.map(p=>p.slug), 'guide/settings', 'guide/turbo-lora', 'guide/base-guide', 'troubleshooting', 'moss-image-edit', 'featured-on', 'presets', 'presets/photoreal', 'presets/poster', 'presets/menu', 'presets/product-label', 'presets/infographic', 'presets/quote-card', 'comfyui/mossimagehfloader', 'use-cases', 'text-in-image-generator', 'gallery', 'blog', ...blogPosts.map(post=>`blog/${post.slug}`), 'pricing', 'privacy', 'terms', 'refund', 'contact'])].filter(slug=>!excluded.has(slug));
+  const slugs = [...new Set(['', ...articles.map(a=>a.slug), ...directories.map(d=>d.slug), ...landingPageMetadata.map(p=>p.slug), 'guide/settings', 'guide/turbo-lora', 'guide/base-guide', 'troubleshooting', 'moss-image-edit', 'image-editing-early-access', 'featured-on', 'presets', 'presets/photoreal', 'presets/poster', 'presets/menu', 'presets/product-label', 'presets/infographic', 'presets/quote-card', 'comfyui/mossimagehfloader', 'use-cases', 'text-in-image-generator', 'gallery', 'blog', ...blogPosts.map(post=>`blog/${post.slug}`), 'pricing', 'privacy', 'terms', 'refund', 'contact'])].filter(slug=>!excluded.has(slug));
   return slugs.map(slug=>({
     url: `https://mossimage.run/${slug ? `${slug}/` : ''}`,
     lastModified: contentLastModified[slug] || '2026-10-23',

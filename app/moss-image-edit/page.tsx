@@ -4,8 +4,8 @@ import { EditorialPage } from '@/components/editorial-page';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const canonical = 'https://mossimage.run/moss-image-edit/';
-const title = 'Can MOSS-Image Edit Images? LoRAs & ComfyUI Guide';
-const description = 'Learn what MOSS-Image can and cannot edit. Compare a community Edit LoRA, native ComfyUI support, reference-image workflows, and layout alternatives.';
+const title = 'Can MOSS-Image Edit Images? Files, Nodes & Edit LoRA Guide';
+const description = 'Edit images with MOSS-Image community LoRAs and ComfyUI. Find the correct Edit patch, model folders, text encoder, native nodes, and Ostris requirements.';
 
 export const metadata: Metadata = {
   title,
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 const sections = [
   { id: 'answer', title: 'The short answer' },
   { id: 'chinoll', title: 'Moss-Image-Edit LoRA' },
+  { id: 'files', title: 'Files and nodes you need' },
   { id: 'native-comfyui', title: 'Native ComfyUI support' },
   { id: 'ostris', title: 'Ostris edit nodes' },
   { id: 'choose', title: 'Choose an editing path' },
@@ -34,7 +35,7 @@ export default function MossImageEditPage() {
         headline: 'Can MOSS-Image Edit Images?',
         description,
         datePublished: '2026-10-27',
-        dateModified: '2026-10-27',
+        dateModified: '2026-11-08',
         mainEntityOfPage: canonical,
         author: { '@type': 'Organization', name: 'Moxion Labs LLC', url: 'https://mossimage.run/' },
         publisher: { '@id': 'https://mossimage.run/#organization' },
@@ -55,7 +56,7 @@ export default function MossImageEditPage() {
       intro="MOSS-Image Base and SFT are text-to-image checkpoints, but community Edit LoRAs and current ComfyUI support can add reference-image editing. This guide separates those local workflows from the hosted studio's current capabilities."
       sections={sections}
       bottomLink={{ href: '/workflows/', label: 'Download ComfyUI workflows' }}
-      publishedDate="October 27, 2026"
+      publishedDate="October 27, 2026 · Updated November 8, 2026"
     >
       <section id="answer">
         <h2>The short answer</h2>
@@ -84,6 +85,23 @@ export default function MossImageEditPage() {
 hf download OpenMOSS-Team/MOSS-Image-SFT \\
   --local-dir models/MOSS-Image-SFT`}</code></pre>
         <p>Import a workflow published for this LoRA rather than adding a generic LoRA node to an unrelated text-to-image graph. The reference image must reach the model using the edit workflow&apos;s conditioning path.</p>
+      </section>
+
+      <section id="files">
+        <h2>Which file or node do you actually need?</h2>
+        <p>Most setup problems come from mixing the older Hugging Face directory workflow with the current native ComfyUI workflow. Choose one loading path first, then keep every file in the directory that workflow expects.</p>
+        <div className="comparison-table-wrap"><table><thead><tr><th>What you found</th><th>What it is</th><th>Where it belongs</th></tr></thead><tbody>
+          <tr><th>chinoll/Moss-Image-Edit</th><td>Community instruction-edit LoRA</td><td>Download from the author&apos;s Hugging Face repository</td></tr>
+          <tr><th><code>adapter_model.safetensors</code></th><td>The published Edit LoRA weight; it may be renamed <code>moss_image_edit.safetensors</code></td><td><code>ComfyUI/models/model_patches/</code> for native loaders</td></tr>
+          <tr><th>MOSS-Image Base or SFT</th><td>The diffusion model used with the Edit patch</td><td><code>ComfyUI/models/diffusion_models/</code></td></tr>
+          <tr><th>Qwen3.5-9B text encoder</th><td>Encodes the instruction and reference image</td><td><code>ComfyUI/models/text_encoders/</code></td></tr>
+          <tr><th>Matching FLUX.2 VAE</th><td>Encodes source images and decodes the result</td><td><code>ComfyUI/models/vae/</code></td></tr>
+          <tr><th>Text Encode MOSS-Image Edit</th><td>Native reference-conditioning node</td><td>Current ComfyUI; set <code>edit_format</code> to <code>Moss-Image-Edit</code></td></tr>
+          <tr><th>MOSS-Image Ostris Edit Model Patch</th><td>Lets ai-toolkit Edit LoRAs consume reference latents</td><td>Install its package in <code>ComfyUI/custom_nodes/</code></td></tr>
+        </tbody></table></div>
+        <p>Do not move a complete Diffusers repository into the native single-file folders and expect the same graph to load it. The directory-based workflow keeps <code>adapter_config.json</code>, <code>adapter_model.safetensors</code>, and the Base or SFT snapshot in their downloaded structure.</p>
+        <p>If an Ostris graph reads the prompt but ignores the reference, confirm that the Qwen3.5 checkpoint includes vision weights and that the model-patch node is connected after the LoRA loader.</p>
+        <p><Link href="/image-editing-early-access/">Request hosted image-editing early access</Link> if you would rather not install the local workflow.</p>
       </section>
 
       <section id="native-comfyui">

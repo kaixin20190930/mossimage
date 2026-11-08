@@ -81,6 +81,7 @@ test('sitemap excludes private account routes',()=>{
  assert.ok(urls.includes('https://mossimage.run/guide/base-guide/'));
  assert.ok(urls.includes('https://mossimage.run/troubleshooting/'));
  assert.ok(urls.includes('https://mossimage.run/moss-image-edit/'));
+ assert.ok(urls.includes('https://mossimage.run/image-editing-early-access/'));
  assert.ok(urls.includes('https://mossimage.run/featured-on/'));
  assert.ok(urls.includes('https://mossimage.run/json-layout/'));
  assert.ok(urls.includes('https://mossimage.run/presets/product-label/'));
@@ -96,9 +97,9 @@ test('sitemap excludes private account routes',()=>{
  }
  assert.equal(contentLastModified.gallery,'2026-10-31');
  assert.equal(contentLastModified.terms,'2026-10-31');
- assert.equal(contentLastModified.privacy,'2026-10-31');
+ assert.equal(contentLastModified.privacy,'2026-11-08');
  assert.equal(policyUpdatedLabels.terms,'October 31, 2026');
- assert.equal(policyUpdatedLabels.privacy,'October 31, 2026');
+ assert.equal(policyUpdatedLabels.privacy,'November 8, 2026');
 });
 
 test('topic pages expose contextual bidirectional internal links',()=>{

@@ -6,6 +6,7 @@ import { generationIntent } from './intent';
 import { account, logout, requestCode, verifyCode, authConfigured, paymentsConfigured } from './account';
 import { createCheckout, createPortal, stripeWebhook } from './billing';
 import { analyticsSummary, recordAnalytics } from './analytics';
+import { recordEditingInterest } from './editing-interest';
 import { dashboard, deleteAccount, deleteGeneration, exportAccount, exportedGenerationImage, generationImage } from './dashboard';
 import { runDailyReporting } from './gsc';
 export { GenerationState } from './state';
@@ -44,7 +45,7 @@ export default {
       '/api/account': 'GET', '/api/auth/request': 'POST', '/api/auth/verify': 'POST',
       '/api/auth/logout': 'POST', '/api/billing/checkout': 'POST',
       '/api/billing/portal': 'POST', '/api/stripe/webhook': 'POST',
-      '/api/analytics': 'POST', '/api/analytics/summary': 'GET',
+      '/api/analytics': 'POST', '/api/analytics/summary': 'GET', '/api/editing-interest': 'POST',
       '/api/account/dashboard': 'GET', '/api/account/generations/image': 'GET',
       '/api/account/generations/delete': 'POST', '/api/account/export': 'GET',
       '/api/account/export/image': 'GET', '/api/account/delete': 'POST',
@@ -67,6 +68,7 @@ export default {
           '/api/stripe/webhook': () => stripeWebhook(request, env),
           '/api/analytics': () => recordAnalytics(request, env),
           '/api/analytics/summary': () => analyticsSummary(request, env),
+          '/api/editing-interest': () => recordEditingInterest(request, env),
           '/api/account/dashboard': () => dashboard(request, env),
           '/api/account/generations/image': () => generationImage(request, env),
           '/api/account/generations/delete': () => deleteGeneration(request, env),

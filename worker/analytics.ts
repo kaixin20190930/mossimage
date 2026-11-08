@@ -14,6 +14,7 @@ const events = [
   'refunded_retry_cta_view', 'uncertain_recheck_click',
   'verified_landing_view', 'quick_start_eligible', 'quick_start_rendered',
   'quick_start_view', 'quick_start_select',
+  'editing_early_access_view',
 ] as const;
 
 const eventSchema = z.object({

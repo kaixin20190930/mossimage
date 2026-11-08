@@ -22,7 +22,8 @@ export type FunnelEvent =
   | 'quick_start_eligible'
   | 'quick_start_rendered'
   | 'quick_start_view'
-  | 'quick_start_select';
+  | 'quick_start_select'
+  | 'editing_early_access_view';
 
 let memoryVisitorId = '';
 

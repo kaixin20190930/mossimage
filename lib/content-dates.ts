@@ -3,10 +3,10 @@
  * schema-only changes do not advance these values.
  */
 export const contentLastModified: Record<string, string> = {
-  '': '2026-11-07',
+  '': '2026-11-08',
   gallery: '2026-10-31',
   'guide/prompt': '2026-11-07',
-  'guide/json-layout': '2026-11-07',
+  'guide/json-layout': '2026-11-08',
   'json-layout': '2026-10-31',
   'moss-image-ai': '2026-10-26',
   'compare/base-vs-sft': '2026-11-07',
@@ -14,7 +14,7 @@ export const contentLastModified: Record<string, string> = {
   free: '2026-10-26',
   'chinese-ai-image-generator': '2026-11-07',
   pricing: '2026-10-25',
-  privacy: '2026-10-31',
+  privacy: '2026-11-08',
   terms: '2026-10-31',
   refund: '2026-10-25',
   contact: '2026-10-25',
@@ -36,10 +36,11 @@ export const contentLastModified: Record<string, string> = {
   'blog/what-is-moss-image-open-source-ai-model': '2026-10-31',
   'blog/best-moss-image-prompts-examples-seeds': '2026-10-31',
   'guide/settings': '2026-10-27',
-  'guide/turbo-lora': '2026-10-27',
+  'guide/turbo-lora': '2026-11-08',
   'guide/base-guide': '2026-10-27',
   troubleshooting: '2026-10-27',
-  'moss-image-edit': '2026-10-27',
+  'moss-image-edit': '2026-11-08',
+  'image-editing-early-access': '2026-11-08',
   'featured-on': '2026-10-28',
   presets: '2026-10-28',
   'presets/photoreal': '2026-10-28',
@@ -51,7 +52,7 @@ export const contentLastModified: Record<string, string> = {
 };
 
 export const policyUpdatedLabels: Record<string, string> = {
-  privacy: 'October 31, 2026',
+  privacy: 'November 8, 2026',
   terms: 'October 31, 2026',
   refund: 'October 25, 2026',
   contact: 'October 25, 2026',
@@ -73,6 +74,7 @@ export const contentSourceFiles: Record<string, string[]> = {
   'comfyui/mossimagehfloader': ['app/comfyui/mossimagehfloader/page.tsx'],
   'text-in-image-generator': ['app/text-in-image-generator/page.tsx'],
   'moss-image-edit': ['app/moss-image-edit/page.tsx'],
+  'image-editing-early-access': ['app/image-editing-early-access/page.tsx', 'components/editing-interest-form.tsx'],
   'guide/settings': ['app/guide/settings/page.tsx'],
   'guide/turbo-lora': ['app/guide/turbo-lora/page.tsx'],
   'guide/base-guide': ['app/guide/base-guide/page.tsx'],

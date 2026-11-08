@@ -551,6 +551,7 @@ export function Studio() {
         </div>}
       </div>
     </section>
+    <p className="studio-early-access">Want to work from an existing image? <Link href="/image-editing-early-access/">Join image-editing early access</Link>.</p>
     <section className="inspiration" id="inspiration">
       <div className="section-heading"><div><span className="eyebrow">MADE IN THIS STUDIO</span><h2>What you can build.</h2></div><Link href="/gallery/" className="text-link">View all 31 creations</Link></div>
       <div className="inspiration-grid">{examples.map(example => <button type="button" key={example.id} className="inspiration-card" onClick={() => applyExample(example.id)}><div className="art featured-art"><Image src={example.src} alt={example.alt} fill sizes="(max-width: 760px) 100vw, 33vw"/><span className="art-label">MOSS-IMAGE SFT OUTPUT</span><span className="use-prompt">Try this prompt</span></div><div className="card-caption"><span>{example.title}<small>{example.label === 'BILINGUAL TEXT' ? 'Chinese + English text' : example.label === 'JSON LAYOUT' ? 'JSON layout control' : 'Visual quality'}</small></span></div></button>)}</div>

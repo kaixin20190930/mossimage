@@ -21,6 +21,7 @@ const sections = [
   { id: 'definition', title: 'What is a JSON image prompt?' },
   { id: 'example', title: 'Working example' },
   { id: 'fields', title: 'Field reference' },
+  { id: 'bbox', title: 'What a bbox means' },
   { id: 'coordinates', title: 'Centered coordinates' },
   { id: 'errors', title: 'Common errors' },
   { id: 'try', title: 'Try it online' },
@@ -57,7 +58,7 @@ export default function JsonLayoutPage() {
       intro="Describe an image as structured data, give every text or object item an intended region, and open a validated example directly in the online studio."
       sections={sections}
       bottomLink={{ href: '/guide/', label: 'All guides' }}
-      publishedDate="October 23, 2026 · Updated November 7, 2026"
+      publishedDate="October 23, 2026 · Updated November 8, 2026"
     >
       <div className="prompt-guide-start">
         <div><strong>Want a faster starting point?</strong><span>Pick a template, replace its text, and export valid layout JSON.</span></div>
@@ -94,6 +95,16 @@ export default function JsonLayoutPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section id="bbox">
+        <h2>What a bbox actually is</h2>
+        <p>A bbox is the intended rectangular region for one text or object item. In this MOSS-Image layout format, it contains four values in <code>yxyx</code> order: <code>[top, left, bottom, right]</code>.</p>
+        <p>The coordinates are absolute pixel offsets measured from the center of the selected canvas, not from its top-left corner. On a 1024 × 1024 canvas, both axes run from −512 to +512.</p>
+        <div className="comparison-table-wrap"><table><thead><tr><th>Value</th><th>Meaning</th><th>Common mistake</th></tr></thead><tbody>
+          <tr><th><code>top</code></th><td>Upper y edge</td><td>Using a positive value for an upper-half box</td></tr><tr><th><code>left</code></th><td>Left x edge</td><td>Treating it as a width</td></tr><tr><th><code>bottom</code></th><td>Lower y edge</td><td>Making it smaller than <code>top</code></td></tr><tr><th><code>right</code></th><td>Right x edge</td><td>Making it smaller than <code>left</code></td></tr><tr><th><code>caption</code></th><td>Describes the item and visual role</td><td>Expecting the bbox alone to describe the object</td></tr><tr><th><code>text</code></th><td>Exact requested wording for a text item</td><td>Omitting it when <code>label</code> is <code>text</code></td></tr>
+        </tbody></table></div>
+        <p>For example, <code>[-400, -420, -180, 420]</code> means a wide region in the upper half of a 1024 × 1024 canvas. A bbox reserves an intended region; it does not lock pixels or guarantee typography. Avoid overlapping boxes unless competing layout guidance is intentional—the result is model-dependent.</p>
       </section>
 
       <section id="coordinates">

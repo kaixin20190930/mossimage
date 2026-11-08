@@ -190,6 +190,18 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
       assert.equal(persisted.gscInspections[0].verdict,'PASS');
       assert.equal(persisted.gscSitemaps[0].errors,'0');
     });
+    await t.test('editing interest is deduplicated and summarized without exposing identifiers',async()=>{
+      const call=ledger('editing-interest');
+      const now=Date.parse('2026-11-08T10:00:00Z');
+      await call('/test-clock',now);
+      const visitorHash='a'.repeat(64), emailHash='b'.repeat(64), emailCipher=`${'c'.repeat(24)}.${'d'.repeat(32)}`;
+      await call('/editing-interest/record',{visitorHash,choices:{styleChange:true,selectiveRepaint:false,textReplacement:true,compositionChange:false,other:false},note:'First request',emailHash,emailCipher});
+      await call('/editing-interest/record',{visitorHash,choices:{styleChange:false,selectiveRepaint:true,textReplacement:false,compositionChange:false,other:false},note:'Updated request'});
+      const summary=await call('/analytics/summary',{days:30});
+      assert.deepEqual(summary.editingInterest,{submissions:1,emails:1,style_change:0,selective_repaint:1,text_replacement:0,composition_change:0,other_choice:0});
+      assert.equal(JSON.stringify(summary).includes(visitorHash),false);
+      assert.equal(JSON.stringify(summary).includes(emailCipher),false);
+    });
     await t.test('account credits, refunds and billing grants are atomic and idempotent',async()=>{
       const call=ledger('account-credit-ledger');
       const email='buyer@example.com', codeHash='c'.repeat(64), userId='d'.repeat(64), sessionHash='e'.repeat(64);

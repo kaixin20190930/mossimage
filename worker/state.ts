@@ -93,6 +93,14 @@ export class GenerationState extends DurableObject<Env> {
       PRIMARY KEY(day, event, visitor_hash, dimension)
     )`);
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS analytics_events_day ON analytics_events(day)');
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS editing_interest (
+      visitor_hash TEXT PRIMARY KEY, style_change INTEGER NOT NULL DEFAULT 0,
+      selective_repaint INTEGER NOT NULL DEFAULT 0, text_replacement INTEGER NOT NULL DEFAULT 0,
+      composition_change INTEGER NOT NULL DEFAULT 0, other_choice INTEGER NOT NULL DEFAULT 0,
+      note TEXT NOT NULL DEFAULT '', email_hash TEXT, email_cipher TEXT,
+      created INTEGER NOT NULL, updated INTEGER NOT NULL
+    )`);
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS editing_interest_updated ON editing_interest(updated)');
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS daily_funnel_snapshots (
       day TEXT PRIMARY KEY, generated_at INTEGER NOT NULL, payload TEXT NOT NULL
     )`);
@@ -175,7 +183,7 @@ export class GenerationState extends DurableObject<Env> {
           'upgrade_impression','upgrade_pack_click','upgrade_pricing_click',
           'generation_error_view','generation_retry','refunded_retry_cta_view','uncertain_recheck_click',
           'verified_landing_view','quick_start_eligible','quick_start_rendered',
-          'quick_start_view','quick_start_select','studio_view',
+          'quick_start_view','quick_start_select','studio_view','editing_early_access_view',
         ]);
         const event = String(input.event || '');
         const visitorHash = String(input.visitorHash || '');
@@ -198,6 +206,27 @@ export class GenerationState extends DurableObject<Env> {
           day, event, visitorHash, dimension, now, now,
         );
         return { ok: true };
+      }
+
+      if (path === '/editing-interest/record') {
+        const visitorHash = String(input.visitorHash || '');
+        const choices = input.choices && typeof input.choices === 'object' ? input.choices as Record<string, unknown> : {};
+        const note = String(input.note || '').trim().slice(0, 280);
+        const emailHash = input.emailHash ? String(input.emailHash) : null;
+        const emailCipher = input.emailCipher ? String(input.emailCipher) : null;
+        if (!/^[a-f0-9]{64}$/.test(visitorHash) || (emailHash && !/^[a-f0-9]{64}$/.test(emailHash)) || (emailCipher && !/^[a-f0-9]{24}\.[a-f0-9]+$/.test(emailCipher))) throw new Error('Invalid editing interest');
+        const values = ['styleChange','selectiveRepaint','textReplacement','compositionChange','other'].map(key => choices[key] === true ? 1 : 0);
+        if (!values.some(Boolean)) throw new Error('No editing choice');
+        this.ctx.storage.sql.exec(
+          `INSERT INTO editing_interest(visitor_hash, style_change, selective_repaint, text_replacement, composition_change, other_choice, note, email_hash, email_cipher, created, updated)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(visitor_hash) DO UPDATE SET style_change = excluded.style_change, selective_repaint = excluded.selective_repaint,
+             text_replacement = excluded.text_replacement, composition_change = excluded.composition_change, other_choice = excluded.other_choice,
+             note = excluded.note, email_hash = COALESCE(excluded.email_hash, editing_interest.email_hash),
+             email_cipher = COALESCE(excluded.email_cipher, editing_interest.email_cipher), updated = excluded.updated`,
+          visitorHash, ...values, note, emailHash, emailCipher, now, now,
+        );
+        return { recorded: true };
       }
 
       if (path === '/analytics/summary') {
@@ -263,11 +292,18 @@ export class GenerationState extends DurableObject<Env> {
         const gscSitemaps = this.ctx.storage.sql.exec<{ path: string; checked_at: number; payload: string }>(
           'SELECT path, checked_at, payload FROM gsc_sitemaps ORDER BY path',
         ).toArray().map(row => ({ path: row.path, checkedAt: new Date(row.checked_at).toISOString(), ...JSON.parse(row.payload) }));
+        const editingInterest = this.ctx.storage.sql.exec<{
+          submissions: number; emails: number; style_change: number; selective_repaint: number;
+          text_replacement: number; composition_change: number; other_choice: number;
+        }>(`SELECT COUNT(*) AS submissions, COUNT(email_hash) AS emails, SUM(style_change) AS style_change,
+                   SUM(selective_repaint) AS selective_repaint, SUM(text_replacement) AS text_replacement,
+                   SUM(composition_change) AS composition_change, SUM(other_choice) AS other_choice
+            FROM editing_interest WHERE updated >= ?`, now - days * 86400000).one();
         return {
           days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns,
           generationFrequency, generationOutcomes, recoveryV2Since: recoveryV2Since ? new Date(recoveryV2Since).toISOString() : null,
           dailySnapshots, gscDaily, gscTopQueries, gscSync,
-          gscLastSync: gscSync.lastSuccessAt, gscInspections, gscSitemaps,
+          gscLastSync: gscSync.lastSuccessAt, gscInspections, gscSitemaps, editingInterest,
         };
       }
 
