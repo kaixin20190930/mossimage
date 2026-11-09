@@ -85,21 +85,37 @@ function mediaFor(slug: string): readonly BlogMedia[] {
 
 const comfyUiErrorIndex = `### Error messages, in the words you will see them
 
+#### The MOSS-Image template or nodes are missing
+
+The native text-to-image templates require ComfyUI 0.42.0 or later; edit and control templates require 0.43.0 or later. Update ComfyUI and its current dependencies before replacing model files. The older HF-directory graph is a separate plugin workflow. See the [known-good settings baseline](/guide/settings/) after the correct template loads.
+
 #### \"The value moss_image for load clip's type is not available.\"
 
 This is a loader-path mismatch, not a reason to move random files. For a native graph, update ComfyUI until the Load CLIP node offers type \`moss_image\`, put the text encoder in \`ComfyUI/models/text_encoders/\`, and re-import the current native workflow. For an HF-directory graph, do not use the stock Load CLIP node: use MOSSImageHFLoader and point \`model_path\` at the complete Diffusers directory containing \`transformer/\`, \`text_encoder/\`, \`tokenizer/\`, and \`vae/\`. Do not mix the two graphs.
 
-#### Missing nodes, red boxes, or MOSSImageHFLoader is absent
+#### \"MOSSImageHFLoader\" is missing or the graph shows red nodes
 
 First identify the graph type. A current native workflow requires a current ComfyUI build but no MOSS plugin. An HF-directory workflow requires the OpenMOSS custom node and a full restart. Check the startup log for the first import error before reinstalling anything.
 
-#### Output is pure noise
+#### The model type cannot be detected or a weight stays unloaded
 
-Restore the complete workflow for the loader you chose. Native and HF-directory graphs use different sampling paths, so swapping only the loader can finish without an exception and still return noise. Test one 1024 × 1024 image with the graph's saved values, a fixed seed, no LoRA, and no quantization change.
+Confirm that the diffusion checkpoint and text encoder came from the matching MOSS-Image release. Native single-file checkpoints and HF-directory components use different loaders and weight layouts. Read the first loader error and restore the matching complete workflow instead of renaming files or replacing one node.
 
-#### It worked yesterday, then an update broke it
+#### KSampler stops with a dtype error
 
-Open the last saved graph, read the startup and queue logs, and record the ComfyUI commit plus model filenames. Look for missing nodes, unloaded LoRA keys, precision warnings, or NaN values. Reproduce the failure with one fixed seed before changing CFG, steps, sampler, or model files.`;
+Record the exact exception, device backend, ComfyUI version, and loaded weight dtype. First reproduce with current ComfyUI, the official BF16 workflow, and third-party custom nodes disabled. Do not treat every KSampler dtype exception as an MOSS sampler problem: backend-specific casting failures can surface at KSampler even when preparation failed earlier.
+
+#### Output is pure noise after carrying over ModelSamplingSD3
+
+Restore the complete workflow for the loader you chose. Native and HF-directory graphs use different timestep multipliers, so swapping only the loader can finish without an exception and still return noise. For the native path, use its saved graph or ModelSamplingAuraFlow with multiplier 1 when adjusting shift; do not carry the plugin graph's ModelSamplingSD3 node into it. Test one 1024 × 1024 image with a fixed seed and no LoRA.
+
+#### INT8 or ConvRot works differently from BF16
+
+Treat quantized weights as a separate test condition, not a drop-in diagnosis. Run the same fixed prompt and seed with the official BF16 and INT8 files in otherwise identical native graphs. If only the quantized run fails or degrades, keep the BF16 baseline and report the exact checkpoint hash and ComfyUI version.
+
+#### SageAttention or another acceleration flag produces gray or distorted output
+
+Disable the acceleration flag and repeat the same fixed-seed BF16 baseline before changing CFG or steps. If the normal attention path works, keep the flag off until that exact backend and ComfyUI combination has been tested separately. A visually bad image is a quality regression, not the same event as a queue or provider failure.`;
 
 function markdownFor(post: (typeof blogPosts)[number]) {
   if (post.slug !== 'moss-image-comfyui-guide') return post.body;

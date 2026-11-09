@@ -37,7 +37,7 @@ const labels: Record<string, string> = {
   studio_view: 'Studio opened',
   generate_submit: 'Generation submitted',
   generate_success: 'Generation completed',
-  generate_fail: 'Generation failed',
+  generate_fail: 'Generation not completed',
   verify_email_sent: 'Verification email sent',
   verify_success: 'Email verified',
   pricing_view: 'Pricing viewed',
@@ -102,6 +102,29 @@ export function AnalyticsDashboard() {
   }, [load]);
 
   const totals = useMemo(() => new Map(data?.totals.map(metric => [metric.event, metric]) || []), [data]);
+  const failureGroups = useMemo(() => {
+    const groups = new Map([
+      ['Status uncertain', 0],
+      ['Provider failure / refund', 0],
+      ['Product access limit', 0],
+      ['Cooldown', 0],
+      ['Other', 0],
+    ]);
+    for (const row of data?.breakdowns || []) {
+      if (row.event !== 'generate_fail') continue;
+      const code = row.properties.errorCode || 'unknown';
+      const group = code.includes('uncertain')
+        ? 'Status uncertain'
+        : code.includes('refunded') || code === 'generation_no_image_refunded' || code === 'generation_safety_refunded'
+          ? 'Provider failure / refund'
+          : ['sign_in_required', 'credits_exhausted', 'preview_limit', 'preview_requires_account', 'starter_limit', 'daily_budget_exhausted', 'preview_attempt_limit', 'account_frozen'].includes(code)
+            ? 'Product access limit'
+            : code === 'cooldown' ? 'Cooldown' : 'Other';
+      groups.set(group, (groups.get(group) || 0) + row.events);
+    }
+    return [...groups.entries()].map(([label, events]) => ({ label, events })).filter(row => row.events > 0);
+  }, [data]);
+  const incompleteTotal = failureGroups.reduce((sum, row) => sum + row.events, 0);
   const syncStale = data?.gscSync.lastSuccessAt ? Date.now() - new Date(data.gscSync.lastSuccessAt).getTime() > 26 * 60 * 60 * 1000 : true;
 
   return <div className="analytics-dashboard">
@@ -116,6 +139,11 @@ export function AnalyticsDashboard() {
         const metric = totals.get(event);
         return <article key={event}><span>{label}</span><strong>{metric?.events || 0}</strong><small>{metric?.visitors || 0} people</small></article>;
       })}</div>
+      <section className="analytics-funnel">
+        <h2>Why generations did not complete</h2>
+        <p className="analytics-note">These are client-side incomplete flows, not 1:1 provider or model failures. Authentication, quota, cooldown, and unresolved polling are separated below.</p>
+        <div>{failureGroups.map(row => <article key={row.label}><span>{row.label}</span><strong>{row.events}</strong><small>{incompleteTotal ? (row.events / incompleteTotal * 100).toFixed(1) : '0.0'}% of incomplete events</small></article>)}</div>
+      </section>
       <section className="analytics-funnel">
         <h2>Step conversion</h2>
         <div>{funnel.map(([from, to]) => {

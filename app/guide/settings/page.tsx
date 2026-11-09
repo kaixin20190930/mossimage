@@ -50,7 +50,7 @@ export default function SettingsGuidePage() {
         <tr><th>Resolution</th><td>1024 × 1024</td></tr>
         <tr><th>Seed</th><td>Fixed</td></tr>
       </tbody></table></div>
-      <p>Run this baseline once, save the output, then change one variable per comparison. If you use the native ComfyUI workflow, keep the values saved in that downloaded graph instead of copying this HF-directory recipe into it.</p>
+      <p>Run this baseline once, save the output, then change one variable per comparison. If you use the native ComfyUI workflow, keep the values saved in that downloaded graph instead of copying this HF-directory recipe into it. Accelerated adapters use different settings; compare them in the <Link href="/guide/turbo-lora/">4-step and 8-step Turbo guide</Link>.</p>
     </section>
     <section id="base-cfg"><h2>Why Base can look weak with a short prompt</h2>
       <p>The official Base guide recommends CFG 3–6 and says shorter prompts may benefit from higher values. Start at 3, keep the seed fixed, and move upward in small increments. Higher guidance is not automatically better: stop when contrast and prompt adherence improve without harsh or brittle detail.</p>
