@@ -549,8 +549,8 @@ export class GenerationState extends DurableObject<Env> {
           this.write(`cooldown:${owner}`, true, now + 30000);
           if (this.env.AUTH_ENABLED === 'true') this.write(`preview-reservation:${reservationId}`, { owner, day, pixels }, midnight);
           this.ctx.storage.sql.exec(
-            `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, attempt_number, pixels, write_ahead_at)
-             VALUES (?, ?, ?, ?, ?, ?)`, intentId, reservationId, owner, attempts + 1, pixels, now,
+            `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, attempt_number, pixels, write_ahead_at, measurement_version)
+             VALUES (?, ?, ?, ?, ?, ?, 'reliability_v1')`, intentId, reservationId, owner, attempts + 1, pixels, now,
           );
           return { allowed: true, remaining: previewLimit - used - 1, mode: this.env.AUTH_ENABLED === 'true' ? 'preview' : 'legacy' };
         }
@@ -577,8 +577,8 @@ export class GenerationState extends DurableObject<Env> {
           'SELECT COUNT(*) AS count FROM generation_intents WHERE owner_hash = ? AND write_ahead_at >= ?', owner, dayStart,
         ).one().count;
         this.ctx.storage.sql.exec(
-          `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, user_id, attempt_number, pixels, write_ahead_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`, intentId, reservationId, owner, userId, attempts + 1, pixels, now,
+          `INSERT INTO generation_intents(intent_id, reservation_id, owner_hash, user_id, attempt_number, pixels, write_ahead_at, measurement_version)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'reliability_v1')`, intentId, reservationId, owner, userId, attempts + 1, pixels, now,
         );
         return { allowed: true, mode: 'account', account: this.account(this.user(userId)!) };
       }
