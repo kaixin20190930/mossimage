@@ -290,6 +290,7 @@ export function Studio() {
       }
       window.dispatchEvent(new Event('moss-account-change'));
 
+      let consecutivePollErrors = 0;
       for (let attempt = 0; attempt < 150; attempt++) {
         if (!alive.current) return;
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -297,10 +298,16 @@ export function Studio() {
         try {
           poll = await fetchGenerationStatus(job.token || '');
         } catch {
+          consecutivePollErrors++;
+          if (consecutivePollErrors < 3) continue;
           throw new GenerationRequestError({ code: 'generation_poll_uncertain' }, 'This generation is still being checked. Avoid submitting it again immediately so you are not charged twice.');
         }
         const result = await poll.json() as GenerationBody;
-        if (!poll.ok) throw new GenerationRequestError(result, 'Could not check your generation.');
+        if (!poll.ok) {
+          if (result.code === 'generation_poll_uncertain' && ++consecutivePollErrors < 3) continue;
+          throw new GenerationRequestError(result, 'Could not check your generation.');
+        }
+        consecutivePollErrors = 0;
         if (result.status === 'COMPLETED') {
           track('generate_success', { mode, size, source: generationSource.current });
           savePending();

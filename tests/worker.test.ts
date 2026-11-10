@@ -302,6 +302,10 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
       const url=`https://mossimage.run/api/generate/status/?token=${encodeURIComponent(job.token)}`;
       assert.equal((await mf.dispatchFetch(url,{headers:{'cf-connecting-ip':'203.0.113.9'}})).status,403);
       for(let i=0;i<2;i++) { const r=await mf.dispatchFetch(url,{headers:{'cf-connecting-ip':'203.0.113.8'}});assert.equal(r.status,200,await r.clone().text());assert.deepEqual(await r.json(),{status:'COMPLETED',image:'https://fal.media/test.png',seed:42}); }
+      const call=ledger('generation-ledger-v1');
+      await call('/test-clock',Date.now()+31*60000);
+      const summary=await call('/analytics/summary',{days:30});
+      assert.deepEqual(summary.generationReliability,{matured:1,completed:1,failed:0,unresolved:0,safety:0});
     });
     assert.equal(providerCalls, 3);
     allowProvider = false;

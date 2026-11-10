@@ -82,6 +82,20 @@ export class GenerationState extends DurableObject<Env> {
       outcome TEXT NOT NULL DEFAULT 'submitting', failure_reason TEXT,
       credit_action TEXT NOT NULL DEFAULT 'reserved'
     )`);
+    const intentColumns = new Set(ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(generation_intents)').toArray().map(column => column.name));
+    const addIntentColumn = (name: string, definition: string) => {
+      if (!intentColumns.has(name)) ctx.storage.sql.exec(`ALTER TABLE generation_intents ADD COLUMN ${name} ${definition}`);
+    };
+    addIntentColumn('last_polled_at', 'INTEGER');
+    addIntentColumn('poll_attempts', 'INTEGER NOT NULL DEFAULT 0');
+    addIntentColumn('poll_error_count', 'INTEGER NOT NULL DEFAULT 0');
+    addIntentColumn('last_provider_status', 'TEXT');
+    addIntentColumn('first_uncertain_at', 'INTEGER');
+    addIntentColumn('resolution_source', 'TEXT');
+    addIntentColumn('mode', 'TEXT');
+    addIntentColumn('size', 'TEXT');
+    addIntentColumn('prompt_length_bucket', 'TEXT');
+    addIntentColumn('measurement_version', "TEXT NOT NULL DEFAULT 'legacy'");
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS generation_intents_owner_time ON generation_intents(owner_hash, write_ahead_at DESC)');
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS webhook_events (
       id TEXT PRIMARY KEY, created INTEGER NOT NULL
@@ -262,6 +276,16 @@ export class GenerationState extends DurableObject<Env> {
            FROM generation_intents WHERE write_ahead_at >= ?
            GROUP BY outcome, failure_reason, credit_action ORDER BY attempts DESC`, now - days * 86400000,
         ).toArray();
+        const generationReliability = this.ctx.storage.sql.exec<{ matured: number; completed: number; failed: number; unresolved: number; safety: number }>(
+          `SELECT COUNT(*) AS matured,
+             COALESCE(SUM(CASE WHEN outcome = 'completed' THEN 1 ELSE 0 END), 0) AS completed,
+             COALESCE(SUM(CASE WHEN outcome IN ('provider_failed_refunded','no_image_refunded') THEN 1 ELSE 0 END), 0) AS failed,
+             COALESCE(SUM(CASE WHEN resolved_at IS NULL THEN 1 ELSE 0 END), 0) AS unresolved,
+             COALESCE(SUM(CASE WHEN outcome = 'safety_refunded' THEN 1 ELSE 0 END), 0) AS safety
+           FROM generation_intents
+           WHERE measurement_version = 'reliability_v1' AND write_ahead_at >= ? AND write_ahead_at <= ?`,
+          now - days * 86400000, now - 30 * 60000,
+        ).one();
         const dailySnapshots = this.ctx.storage.sql.exec<{ day: string; generated_at: number; payload: string }>(
           'SELECT day, generated_at, payload FROM daily_funnel_snapshots WHERE day >= ? ORDER BY day DESC', since,
         ).toArray().map(row => ({ day: row.day, generatedAt: new Date(row.generated_at).toISOString(), ...JSON.parse(row.payload) }));
@@ -301,7 +325,8 @@ export class GenerationState extends DurableObject<Env> {
             FROM editing_interest WHERE updated >= ?`, now - days * 86400000).one();
         return {
           days, since, generatedAt: new Date(now).toISOString(), totals, daily, breakdowns,
-          generationFrequency, generationOutcomes, recoveryV2Since: recoveryV2Since ? new Date(recoveryV2Since).toISOString() : null,
+          generationFrequency, generationOutcomes, generationReliability,
+          recoveryV2Since: recoveryV2Since ? new Date(recoveryV2Since).toISOString() : null,
           dailySnapshots, gscDaily, gscTopQueries, gscSync,
           gscLastSync: gscSync.lastSuccessAt, gscInspections, gscSitemaps, editingInterest,
         };
@@ -567,6 +592,14 @@ export class GenerationState extends DurableObject<Env> {
            WHERE intent_id = ?`, requestId, now, intentId,
         );
         const reservationId = String(input.reservationId || '');
+        const prompt = String(input.prompt || '');
+        const mode = String(input.mode || '');
+        const size = String(input.size || '');
+        const promptLengthBucket = prompt.length < 250 ? 'short' : prompt.length < 1000 ? 'medium' : 'long';
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET mode = ?, size = ?, prompt_length_bucket = ?, measurement_version = 'reliability_v1'
+           WHERE intent_id = ?`, mode, size, promptLengthBucket, intentId,
+        );
         const preview = input.preview === true;
         if (preview) {
           const reservation = this.read<{ owner: string; day: string; pixels: number }>(`preview-reservation:${reservationId}`, now);
@@ -576,9 +609,6 @@ export class GenerationState extends DurableObject<Env> {
         } else {
           this.ctx.storage.sql.exec('UPDATE jobs SET request_id = ? WHERE reservation_id = ?', requestId, reservationId);
           const job = this.ctx.storage.sql.exec<{ user_id: string }>('SELECT user_id FROM jobs WHERE reservation_id = ?', reservationId).toArray()[0];
-          const prompt = String(input.prompt || '');
-          const mode = String(input.mode || '');
-          const size = String(input.size || '');
           if (job && prompt.length >= 3 && prompt.length <= 6000 && (mode === 'text' || mode === 'layout') && ['square', 'portrait', 'landscape'].includes(size)) {
             this.ctx.storage.sql.exec(
               `INSERT OR REPLACE INTO generations(request_id, user_id, prompt, mode, size, requested_seed, status, created)
@@ -595,11 +625,33 @@ export class GenerationState extends DurableObject<Env> {
         const requestId = typeof input.requestId === 'string' ? input.requestId : undefined;
         const reason = String(input.reason || 'submit_uncertain').slice(0, 64);
         this.ctx.storage.sql.exec(
-          `UPDATE generation_intents SET outcome = ?, failure_reason = ?
+          `UPDATE generation_intents SET outcome = ?, failure_reason = ?, first_uncertain_at = COALESCE(first_uncertain_at, ?),
+             last_polled_at = ?, poll_attempts = poll_attempts + 1, poll_error_count = poll_error_count + 1
            WHERE ${requestId ? 'provider_request_id = ?' : 'intent_id = ?'} AND resolved_at IS NULL`,
-          reason, reason, requestId || intentId || '',
+          reason, reason, now, now, requestId || intentId || '',
         );
         return { ok: true };
+      }
+
+      if (path === '/intent/polled') {
+        const requestId = String(input.requestId || '');
+        const providerStatus = String(input.providerStatus || '').slice(0, 64);
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET last_polled_at = ?, poll_attempts = poll_attempts + 1,
+             last_provider_status = ? WHERE provider_request_id = ? AND resolved_at IS NULL`,
+          now, providerStatus, requestId,
+        );
+        return { ok: true };
+      }
+
+      if (path === '/intent/reconcile-list') {
+        return { intents: this.ctx.storage.sql.exec<{ provider_request_id: string; user_id: string | null; write_ahead_at: number }>(
+          `SELECT provider_request_id, user_id, write_ahead_at FROM generation_intents
+           WHERE resolved_at IS NULL AND provider_request_id IS NOT NULL
+             AND outcome IN ('provider_accepted','poll_uncertain','link_uncertain')
+             AND write_ahead_at <= ? AND (last_polled_at IS NULL OR last_polled_at <= ?)
+           ORDER BY write_ahead_at LIMIT 50`, now - 2 * 60000, now - 5 * 60000,
+        ).toArray() };
       }
 
       if (path === '/intent/resolve') {
@@ -609,9 +661,9 @@ export class GenerationState extends DurableObject<Env> {
         const reason = typeof input.reason === 'string' ? input.reason.slice(0, 64) : null;
         const creditAction = String(input.creditAction || 'consumed').slice(0, 32);
         this.ctx.storage.sql.exec(
-          `UPDATE generation_intents SET outcome = ?, failure_reason = ?, credit_action = ?, resolved_at = ?
+          `UPDATE generation_intents SET outcome = ?, failure_reason = ?, credit_action = ?, resolved_at = ?, resolution_source = ?
            WHERE ${requestId ? 'provider_request_id = ?' : 'intent_id = ?'}`,
-          outcome, reason, creditAction, now, requestId || intentId || '',
+          outcome, reason, creditAction, now, String(input.resolutionSource || 'foreground').slice(0, 32), requestId || intentId || '',
         );
         return { ok: true };
       }
@@ -669,6 +721,11 @@ export class GenerationState extends DurableObject<Env> {
         const prompt = String(input.prompt || '');
         const mode = String(input.mode || '');
         const size = String(input.size || '');
+        const promptLengthBucket = prompt.length < 250 ? 'short' : prompt.length < 1000 ? 'medium' : 'long';
+        this.ctx.storage.sql.exec(
+          `UPDATE generation_intents SET mode = ?, size = ?, prompt_length_bucket = ?, measurement_version = 'reliability_v1'
+           WHERE reservation_id = ?`, mode, size, promptLengthBucket, reservationId,
+        );
         if (job && prompt.length >= 3 && prompt.length <= 6000 && (mode === 'text' || mode === 'layout') && ['square', 'portrait', 'landscape'].includes(size)) {
           this.ctx.storage.sql.exec(
             `INSERT OR REPLACE INTO generations(request_id, user_id, prompt, mode, size, requested_seed, status, created)

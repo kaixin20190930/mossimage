@@ -9,6 +9,7 @@ import { analyticsSummary, recordAnalytics } from './analytics';
 import { recordEditingInterest } from './editing-interest';
 import { dashboard, deleteAccount, deleteGeneration, exportAccount, exportedGenerationImage, generationImage } from './dashboard';
 import { runDailyReporting } from './gsc';
+import { reconcileGenerationIntents } from './reconcile';
 export { GenerationState } from './state';
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -97,6 +98,7 @@ export default {
     return assetResponse;
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(runDailyReporting(env, controller.scheduledTime));
+    if (controller.cron === '17 2 * * *') ctx.waitUntil(runDailyReporting(env, controller.scheduledTime));
+    else ctx.waitUntil(reconcileGenerationIntents(env));
   },
 } satisfies ExportedHandler<Env>;

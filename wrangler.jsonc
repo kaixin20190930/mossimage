@@ -23,7 +23,7 @@
   "r2_buckets": [{ "binding": "GENERATIONS", "bucket_name": "mossimage-generations" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GenerationState"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["login@mossimage.run"] }],
-  "triggers": { "crons": ["17 2 * * *"] },
+  "triggers": { "crons": ["*/10 * * * *", "17 2 * * *"] },
   "vars": {
     "APP_ORIGIN": "https://mossimage.run",
     "GENERATION_ENABLED": "true",

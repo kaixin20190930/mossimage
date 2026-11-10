@@ -12,6 +12,7 @@ type Summary = {
   breakdowns: Array<Metric & { properties: Record<string, string> }>;
   generationFrequency: Array<{ bucket: string; visitors: number }>;
   generationOutcomes: Array<{ outcome: string; failure_reason: string | null; credit_action: string; attempts: number }>;
+  generationReliability: { matured: number; completed: number; failed: number; unresolved: number; safety: number };
   recoveryV2Since: string | null;
   dailySnapshots: Array<{ day: string; generatedAt: string; metrics: Metric[] }>;
   gscDaily: Array<{ day: string; clicks: number; impressions: number; ctr: number; position: number }>;
@@ -161,6 +162,24 @@ export function AnalyticsDashboard() {
         <h2>Image-editing early access</h2>
         <p className="analytics-note">Deduplicated by browser ID. Optional addresses are encrypted and are not shown in this report.</p>
         <div><article><span>Valid submissions</span><strong>{data.editingInterest.submissions || 0}</strong><small>independent browser IDs</small></article><article><span>Invitation emails</span><strong>{data.editingInterest.emails || 0}</strong><small>encrypted addresses</small></article><article><span>Style change</span><strong>{data.editingInterest.style_change || 0}</strong></article><article><span>Selective repaint</span><strong>{data.editingInterest.selective_repaint || 0}</strong></article><article><span>Text replacement</span><strong>{data.editingInterest.text_replacement || 0}</strong></article><article><span>Composition change</span><strong>{data.editingInterest.composition_change || 0}</strong></article><article><span>Other</span><strong>{data.editingInterest.other_choice || 0}</strong></article></div>
+      </section>
+      <section className="analytics-breakdowns">
+        <h2>Generation reliability</h2>
+        <p className="analytics-note">Server-side requests from the current measurement version, excluding requests less than 30 minutes old. Product access limits are not included.</p>
+        {(() => {
+          const metric = data.generationReliability;
+          const resolved = metric.completed + metric.failed;
+          const successRate = resolved ? metric.completed / resolved * 100 : 0;
+          const failureRate = metric.matured ? metric.failed / metric.matured * 100 : 0;
+          const unresolvedRate = metric.matured ? metric.unresolved / metric.matured * 100 : 0;
+          return <div className="analytics-metrics">
+            <article><span>Matured sample</span><strong>{metric.matured}</strong><small>30+ minutes old</small></article>
+            <article><span>Confirmed success rate</span><strong>{successRate.toFixed(1)}%</strong><small>{metric.completed} completed / {resolved} resolved</small></article>
+            <article><span>True upstream failure rate</span><strong>{failureRate.toFixed(1)}%</strong><small>{metric.failed} confirmed failures</small></article>
+            <article><span>Unresolved rate</span><strong>{unresolvedRate.toFixed(1)}%</strong><small>{metric.unresolved} unresolved</small></article>
+            <article><span>Safety blocks</span><strong>{metric.safety}</strong><small>reported separately</small></article>
+          </div>;
+        })()}
       </section>
       <section className="analytics-breakdowns">
         <h2>Generation outcomes</h2>

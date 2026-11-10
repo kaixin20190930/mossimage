@@ -67,6 +67,7 @@ export async function status(request: Request, env: Env) {
     return reply(body);
   } catch {
     await stateCall(env, '/intent/uncertain', { requestId, reason: 'poll_uncertain' }).catch(() => undefined);
+    await stateCall(env, '/release', { requestId }).catch(() => undefined);
     return reply({ code: 'generation_poll_uncertain', creditRestored: false, error: 'This generation is still being checked. Check this job again before submitting another one.' }, 502);
   }
 }
