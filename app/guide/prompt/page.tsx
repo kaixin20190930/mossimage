@@ -111,7 +111,7 @@ export default function PromptGuidePage() {
 
       <section id="layout">
         <h2>Place text and objects with JSON layout</h2>
-        <p>Use structured layouts when relative position matters more than free composition. Start with a summary and a few large, non-overlapping regions before adding detail.</p>
+        <p>Use structured layouts when relative position matters more than free composition. Start with a summary and a few large, non-overlapping regions before adding detail. Follow the <Link href="/guide/json-layout/">json bbox layout</Link> reference for centered coordinates and complete examples.</p>
         <PromptExample label="Botanical poster layout" prompt={botanical.prompt} href={featuredImageHref(botanical.id)}/>
         <PromptExample label="Product showcase layout" prompt={product.prompt} href={featuredImageHref(product.id)}/>
       </section>
@@ -125,7 +125,7 @@ export default function PromptGuidePage() {
         <p><strong>More specific request:</strong> use the draft below to separate exact copy from visual instructions. It is a writing example, not a tested generation.</p>
         <PromptExample label="Draft: a short bilingual coffee poster" prompt={coffeePosterDraft} href={studioHref(coffeePosterDraft)}/>
         <ol>
-          <li>Save the original prompt, result, seed, model, canvas size, steps, and CFG. Keep those settings fixed while comparing prompt revisions; a seed alone does not reproduce an image across different models or workflows.</li>
+          <li>Save the original prompt, result, seed, model, canvas size, steps, and CFG. Use the <Link href="/guide/settings/">moss image settings</Link> reference to establish a baseline, then keep those values fixed while comparing prompt revisions; a seed alone does not reproduce an image across different models or workflows.</li>
           <li>Change only the instruction tied to the failure. For spelling, remove extra copy and retain the exact quoted headline. For crowding, adjust spacing without changing the headline or lighting.</li>
           <li>Inspect every Chinese character, English word, and punctuation mark at full size. Keep a revision only if it fixes the target issue without losing another required detail.</li>
           <li>Once the wording works, add one subtitle or detail at a time. If repeated attempts still miss exact lettering, place approved text in a design tool before printing or publishing.</li>
@@ -150,6 +150,7 @@ export default function PromptGuidePage() {
 
       <section id="known-limitations">
         <h2>Known limitations</h2>
+        <p>If you need faster draft iterations, choose a matching adapter recipe in the <Link href="/guide/turbo-lora/">moss turbo lora</Link> guide before judging the final text quality.</p>
         <p>Generated lettering is probabilistic. Quotation marks, shorter phrases, clear placement language, and JSON regions can improve the request, but every word and number still needs proofreading before publication.</p>
         <p>Style names are not deterministic presets. Describe observable traits such as medium, palette, lighting, texture, framing, and typography instead of relying on an artist or genre label alone.</p>
         <p>Save the seed when a composition works. Change one prompt detail at a time, because different seeds can move text, objects, and visual style substantially even when the wording stays the same.</p>

@@ -5,7 +5,7 @@
 export const contentLastModified: Record<string, string> = {
   '': '2026-11-08',
   gallery: '2026-10-31',
-  'guide/prompt': '2026-11-07',
+  'guide/prompt': '2026-11-12',
   'guide/json-layout': '2026-11-08',
   'json-layout': '2026-10-31',
   'moss-image-ai': '2026-10-26',
@@ -38,7 +38,7 @@ export const contentLastModified: Record<string, string> = {
   'guide/settings': '2026-11-09',
   'guide/turbo-lora': '2026-11-09',
   'guide/base-guide': '2026-10-27',
-  troubleshooting: '2026-10-27',
+  troubleshooting: '2026-11-12',
   'moss-image-edit': '2026-11-09',
   'image-editing-early-access': '2026-11-09',
   'featured-on': '2026-10-28',
