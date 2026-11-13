@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: '/use-cases/' },
-  openGraph: { title, description, url: '/use-cases/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title, description, url: '/use-cases/', type: 'website' },
 };
 
 const cards = [

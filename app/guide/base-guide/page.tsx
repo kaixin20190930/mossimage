@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -6,7 +7,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 const canonical = 'https://mossimage.run/guide/base-guide/';
 const title = 'MOSS-Image Base Guide — Settings, Prompts & Local Setup';
 const description = 'Run MOSS-Image Base with verified CFG, steps, shift, sampler, SLG, prompt, and local workflow settings. Learn when to choose Base instead of SFT.';
-export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/base-guide/' }, openGraph: { title, description, url: '/guide/base-guide/', type: 'article' } };
+export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/base-guide/' }, openGraph: { ...defaultOpenGraphImage, title, description, url: '/guide/base-guide/', type: 'article' } };
 const sections = [{ id: 'purpose', title: 'What Base is for' }, { id: 'settings', title: 'Verified settings' }, { id: 'prompts', title: 'Prompt technique' }, { id: 'choose', title: 'Base or SFT?' }, { id: 'local', title: 'Files and local setup' }, { id: 'training', title: 'Training a LoRA' }] as const;
 
 export default function BaseGuidePage() {

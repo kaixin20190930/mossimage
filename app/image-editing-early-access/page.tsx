@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditingInterestForm } from '@/components/editing-interest-form';
@@ -7,7 +8,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 const canonical = 'https://mossimage.run/image-editing-early-access/';
 const title = 'MOSS-Image Upload & Edit — Early Access';
 const description = 'Tell us which upload-based image editing workflow should come first: style changes, selective repainting, text replacement, or composition-preserving edits.';
-export const metadata: Metadata = { title, description, alternates: { canonical: '/image-editing-early-access/' }, openGraph: { title, description, url: '/image-editing-early-access/', type: 'website' } };
+export const metadata: Metadata = { title, description, alternates: { canonical: '/image-editing-early-access/' }, openGraph: { ...defaultOpenGraphImage, title, description, url: '/image-editing-early-access/', type: 'website' } };
 const sections = [{ id: 'availability', title: 'What works where today' }, { id: 'request', title: 'Choose a workflow' }, { id: 'local', title: 'Run it locally today' }] as const;
 
 export default function ImageEditingEarlyAccessPage() {

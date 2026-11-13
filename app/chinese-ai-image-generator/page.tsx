@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   description: page.description,
   alternates: { canonical: '/chinese-ai-image-generator/' },
   robots: { index: true, follow: true },
-  openGraph: { title: page.title, description: page.description, url: '/chinese-ai-image-generator/', type: 'article' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/chinese-ai-image-generator/', type: 'article' },
 };
 
 const sections = [

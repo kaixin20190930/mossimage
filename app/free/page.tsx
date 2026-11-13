@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   title: page.title,
   description: page.description,
   alternates: { canonical: '/free/' },
-  openGraph: { title: page.title, description: page.description, url: '/free/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/free/', type: 'website' },
 };
 
 const sections = [

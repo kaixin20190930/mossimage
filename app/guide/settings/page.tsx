@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -6,7 +7,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 const canonical = 'https://mossimage.run/guide/settings/';
 const title = 'MOSS-Image Settings Guide — CFG, Steps, Scheduler & Fixes';
 const description = 'Fix noise, blur, and weak Base results in MOSS-Image. Compare CFG, steps, schedulers, loader paths, VAE behavior, Turbo settings, and FP16 options.';
-export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/settings/' }, openGraph: { title, description, url: '/guide/settings/', type: 'article' } };
+export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/settings/' }, openGraph: { ...defaultOpenGraphImage, title, description, url: '/guide/settings/', type: 'article' } };
 const sections = [
   { id: 'reference', title: 'Reference settings' },
   { id: 'base-cfg', title: 'Base guidance' },

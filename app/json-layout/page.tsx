@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLayoutBuilder } from '@/components/json-layout-builder';
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   title: page.title,
   description: page.description,
   alternates: { canonical: '/json-layout/' },
-  openGraph: { title: page.title, description: page.description, url: '/json-layout/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/json-layout/', type: 'website' },
 };
 
 export default function JsonLayoutToolPage() {

@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: '/comfyui/mossimagehfloader/' },
-  openGraph: { title, description, url: '/comfyui/mossimagehfloader/', type: 'article' },
+  openGraph: { ...defaultOpenGraphImage, title, description, url: '/comfyui/mossimagehfloader/', type: 'article' },
 };
 
 const sections = [

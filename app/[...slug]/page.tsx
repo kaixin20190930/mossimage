@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 export const dynamicParams = false;
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -49,7 +50,7 @@ const legal = {
 } as const;
 
 export function generateStaticParams(){return [...articles.filter(page=>page.slug!=='guide/local-deploy'),...directories,...Object.values(legal)].map(page=>({slug:page.slug.split('/')}))}
-export async function generateMetadata({params}:{params:Promise<{slug:string[]}>}):Promise<Metadata>{const{slug}=await params;const path=slug.join('/');const page=articles.find(item=>item.slug===path)||directories.find(item=>item.slug===path)||legal[path as keyof typeof legal];if(!page)return{};return{title:page.title,description:page.description,alternates:{canonical:`/${path}/`},openGraph:{title:page.title,description:page.description,url:`/${path}/`,type:'article'}}}
+export async function generateMetadata({params}:{params:Promise<{slug:string[]}>}):Promise<Metadata>{const{slug}=await params;const path=slug.join('/');const page=articles.find(item=>item.slug===path)||directories.find(item=>item.slug===path)||legal[path as keyof typeof legal];if(!page)return{};return{title:page.title,description:page.description,alternates:{canonical:`/${path}/`},openGraph:{ ...defaultOpenGraphImage,title:page.title,description:page.description,url:`/${path}/`,type:'article'}}}
 
 export default async function ContentPage({params}:{params:Promise<{slug:string[]}>}){
   const{slug}=await params;const path=slug.join('/');const directory=directories.find(item=>item.slug===path);const article=articles.find(item=>item.slug===path);const policy=legal[path as keyof typeof legal];if(!directory&&!article&&!policy)notFound();const parent=path.includes('/')?path.split('/')[0]:null;const sections=article?.sections||policy?.sections||[];

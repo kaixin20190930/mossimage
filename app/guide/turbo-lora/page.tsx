@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -6,7 +7,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 const canonical = 'https://mossimage.run/guide/turbo-lora/';
 const title = 'MOSS-Image Turbo LoRA Guide — 4-Step and 8-Step Generation';
 const description = 'Configure 4-step, 8-step, and 15-step MOSS-Image accelerators with their matching CFG, sampler, strength, and workflow settings. Avoid smudged output.';
-export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/turbo-lora/' }, openGraph: { title, description, url: '/guide/turbo-lora/', type: 'article' } };
+export const metadata: Metadata = { title, description, alternates: { canonical: '/guide/turbo-lora/' }, openGraph: { ...defaultOpenGraphImage, title, description, url: '/guide/turbo-lora/', type: 'article' } };
 const sections = [{ id: 'rule', title: 'The important rule' }, { id: 'choose-steps', title: 'Choose 4, 8, or 15 steps' }, { id: 'recipes', title: '4, 8, and 15-step recipes' }, { id: 'workflow', title: 'Workflow setup' }, { id: 'compare', title: 'How to compare quality' }, { id: 'quality', title: 'When not to use Turbo' }] as const;
 
 export default function TurboLoraGuidePage() {

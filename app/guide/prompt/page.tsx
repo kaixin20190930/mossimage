@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   title: page.title,
   description: page.description,
   alternates: { canonical: '/guide/prompt/' },
-  openGraph: { title: page.title, description: page.description, url: '/guide/prompt/', type: 'article' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/guide/prompt/', type: 'article' },
 };
 
 const sections = [

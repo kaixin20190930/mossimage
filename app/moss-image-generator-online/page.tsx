@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   title: page.title,
   description: page.description,
   alternates: { canonical: '/moss-image-generator-online/' },
-  openGraph: { title: page.title, description: page.description, url: '/moss-image-generator-online/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/moss-image-generator-online/', type: 'website' },
 };
 
 const sections = [

@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: '/featured-on/' },
   robots: { index: true, follow: true },
-  openGraph: { title, description, url: '/featured-on/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title, description, url: '/featured-on/', type: 'website' },
 };
 
 const groups = [

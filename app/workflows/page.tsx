@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowDownToLine } from 'lucide-react';
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   title: page.title,
   description: page.description,
   alternates: { canonical: '/workflows/' },
-  openGraph: { title: page.title, description: page.description, url: '/workflows/', type: 'website' },
+  openGraph: { ...defaultOpenGraphImage, title: page.title, description: page.description, url: '/workflows/', type: 'website' },
 };
 
 const sections = [

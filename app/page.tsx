@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Braces, Type, Sprout } from 'lucide-react';
@@ -7,7 +8,7 @@ import { homeMetadata } from '@/lib/content';
 import { creditRestorePolicy } from '@/lib/generation-policy';
 import { homeStructuredData, JsonLd } from '@/lib/structured-data';
 
-export const metadata: Metadata = { ...homeMetadata, alternates: { canonical: '/' }, openGraph: { ...homeMetadata, url: '/', type: 'website' } };
+export const metadata: Metadata = { ...homeMetadata, alternates: { canonical: '/' }, openGraph: { ...defaultOpenGraphImage, ...homeMetadata, url: '/', type: 'website' } };
 
 const features = [
   { number: '01 /', title: 'Words that belong in the picture.', text: 'Create posters, labels, and visual stories with Chinese or English lettering. Always proofread generated text before sharing.', href: '/text-in-image-generator/', link: 'Open the text-in-image generator' },

@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   if (!isPresetSlug(slug)) return {};
   const preset = presets[slug];
-  return { title: preset.title, description: preset.description, alternates: { canonical: `/presets/${slug}/` }, openGraph: { title: preset.title, description: preset.description, url: `/presets/${slug}/`, type: 'website' } };
+  return { title: preset.title, description: preset.description, alternates: { canonical: `/presets/${slug}/` }, openGraph: { ...defaultOpenGraphImage, title: preset.title, description: preset.description, url: `/presets/${slug}/`, type: 'website' } };
 }
 
 export default async function PresetPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: { default: 'MOSS Image Generator', template: '%s' },
   description: 'An independent creative studio for MOSS-Image.',
   robots: { index: true, follow: true },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

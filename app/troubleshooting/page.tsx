@@ -1,3 +1,4 @@
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
@@ -5,7 +6,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 const canonical = 'https://mossimage.run/troubleshooting/';
 const title = 'MOSS-Image Troubleshooting — Fix Noise, Blur & Stripes';
 const description = 'Diagnose MOSS-Image vertical stripes, pure noise, weak Base output, blurry previews, Turbo smearing, missing ComfyUI nodes, and FP16 errors.';
-export const metadata: Metadata = { title, description, alternates: { canonical: '/troubleshooting/' }, openGraph: { title, description, url: '/troubleshooting/', type: 'website' } };
+export const metadata: Metadata = { title, description, alternates: { canonical: '/troubleshooting/' }, openGraph: { ...defaultOpenGraphImage, title, description, url: '/troubleshooting/', type: 'website' } };
 const issues = [
   { title: 'Faint vertical stripes in SFT', symptom: 'Smooth skies, fog, walls, or gradients show evenly spaced color bands.', cause: 'A community analysis isolated the artifact to SFT and published an optional adapter.', href: '/compare/base-vs-sft/#fixing-sft-vertical-stripes', action: 'Compare stripe fixes' },
   { title: 'Output is pure noise', symptom: 'The graph completes, but no coherent image appears.', cause: 'First check whether a plugin workflow was mixed with native loader nodes.', href: '/guide/settings/#noise', action: 'Align the workflow' },
