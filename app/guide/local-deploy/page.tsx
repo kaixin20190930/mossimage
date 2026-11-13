@@ -61,7 +61,7 @@ export default function LocalDeployPage() {
       intro="Run MOSS-Image on your own hardware. Choose native ComfyUI support for a new setup, or use the optional HF-directory plugin when you need to load a complete local Diffusers model directory."
       sections={sections}
       bottomLink={{ href: '/comfyui/', label: 'ComfyUI setup overview' }}
-      publishedDate="October 26, 2026 · Updated November 7, 2026"
+      publishedDate="October 26, 2026 · Updated November 13, 2026"
     >
       <section id="choose">
         <h2>Choose one installation path</h2>
@@ -99,7 +99,7 @@ export default function LocalDeployPage() {
 python comfyui/install.py --comfy-root /path/to/ComfyUI`}</code></pre></div>
         <p>The installer creates a link in <code>custom_nodes</code> and copies the example workflow into <code>user/default/workflows</code> only when a file with the same name does not already exist. Restart ComfyUI after installation.</p>
         <h3>Set model_path</h3>
-        <p>In MOSSImageHFLoader, point <code>model_path</code> at the directory containing the four component folders. An absolute path is the clearest choice. Relative paths are resolved by the ComfyUI process and therefore depend on how it was launched.</p>
+        <p>In <Link href="/comfyui/mossimagehfloader/">mossimagehfloader</Link>, point <code>model_path</code> at the directory containing the four component folders. An absolute path is the clearest choice. Relative paths are resolved by the ComfyUI process and therefore depend on how it was launched.</p>
         <div className="code-block"><pre><code>/home/user/models/MOSS-Image-SFT</code></pre></div>
         <p>Import the <Link href="/workflows/">official HF-directory workflow</Link> and keep its included 50 steps, CFG 3, shift 5, Euler sampler, and <code>sgm_uniform</code> scheduler for the first test.</p>
       </section>

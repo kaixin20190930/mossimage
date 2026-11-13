@@ -37,6 +37,8 @@ export const metadata: Metadata = {
 const sections = [
   { id: 'builder', title: 'Build a prompt' },
   { id: 'proven', title: 'Proven prompts and writing tips' },
+  { id: 'system-prompt', title: 'System prompt and prompt expansion' },
+  { id: 'complete-prompt', title: 'A complete prompt to copy' },
   { id: 'refine', title: 'Refine a failed text prompt' },
   { id: 'results', title: 'See the prompts as real outputs' },
   { id: 'known-limitations', title: 'Known limitations' },
@@ -117,6 +119,18 @@ export default function PromptGuidePage() {
       </section>
         </div>
       </details>
+
+      <section id="system-prompt">
+        <h2>Do you need a MOSS-Image system prompt?</h2>
+        <p>This studio accepts an image prompt, not a separate system prompt. Write the subject, medium, layout, and any exact text in the prompt field. In text mode, the hosted endpoint applies prompt expansion; JSON layout mode sends the structured layout without that expansion. You cannot edit the provider&apos;s system instructions here.</p>
+        <p>If you use MOSS-Image through your own workflow, keep any system instructions separate from the image description and check what that workflow actually supports. For this studio, put the instructions you control in the image prompt below.</p>
+      </section>
+
+      <section id="complete-prompt">
+        <h2>A complete MOSS-Image prompt to copy</h2>
+        <p>This bilingual menu prompt produced a recorded image on this site. It names the scene, specifies the visible wording, and gives the text a clear place in the composition. Copy it as a starting point and proofread the generated result.</p>
+        <PromptExample label="Bilingual café menu · recorded output" prompt={menu.prompt} href={featuredImageHref(menu.id)}/>
+      </section>
 
       <section id="refine">
         <h2>Refine a MOSS-Image prompt when text goes wrong</h2>
