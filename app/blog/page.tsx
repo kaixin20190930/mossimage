@@ -6,6 +6,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const title = 'MOSS-Image Blog — Guides, Tests & Real Prompts';
 const description = 'Practical MOSS-Image tutorials, transparent model tests, JSON layout guidance, Chinese text techniques, and real prompts with saved settings.';
+const postHref = (slug: string) => slug === 'json-layout-ai-image-generator-guide' ? '/guide/json-layout/' : `/blog/${slug}/`;
 
 export const metadata: Metadata = {
   title, description, alternates: { canonical: '/blog/' },
@@ -19,7 +20,7 @@ export default function BlogPage() {
     '@context': 'https://schema.org',
     '@graph': [
       { '@type': 'CollectionPage', '@id': `${canonical}#collection`, name: title, description, url: canonical, isPartOf: { '@id': 'https://mossimage.run/#website' } },
-      { '@type': 'ItemList', itemListElement: blogPosts.map((post, index) => ({ '@type': 'ListItem', position: index + 1, name: post.heading, url: `${canonical}${post.slug}/` })) },
+      { '@type': 'ItemList', itemListElement: blogPosts.map((post, index) => ({ '@type': 'ListItem', position: index + 1, name: post.heading, url: `https://mossimage.run${postHref(post.slug)}` })) },
       breadcrumbStructuredData([{ name: 'MOSS-Image Generator', url: 'https://mossimage.run/' }, { name: 'Blog', url: canonical }]),
     ],
   };
@@ -30,8 +31,8 @@ export default function BlogPage() {
       <header className="article-header"><span className="eyebrow">FIELD NOTES</span><h1>MOSS-Image guides and experiments</h1><p>Practical setup instructions, transparent model tests, structured layout references, and reusable prompts built from real outputs.</p></header>
       <div className="blog-grid">
         {blogPosts.map((post, index) => <article className={index === 0 ? 'featured' : ''} key={post.slug}>
-          <Link className="blog-card-image" href={`/blog/${post.slug}/`}><Image src={post.cover} alt="" fill priority={index === 0} sizes={index === 0 ? '(max-width: 760px) 100vw, 66vw' : '(max-width: 760px) 100vw, 33vw'}/></Link>
-          <div><span className="eyebrow">GUIDE · {post.publishedLabel.toUpperCase()}</span><h2><Link href={`/blog/${post.slug}/`}>{post.heading}</Link></h2><p>{post.excerpt}</p><Link className="blog-read" href={`/blog/${post.slug}/`}>Read article</Link></div>
+          <Link className="blog-card-image" href={postHref(post.slug)}><Image src={post.cover} alt="" fill priority={index === 0} sizes={index === 0 ? '(max-width: 760px) 100vw, 66vw' : '(max-width: 760px) 100vw, 33vw'}/></Link>
+          <div><span className="eyebrow">GUIDE · {post.publishedLabel.toUpperCase()}</span><h2><Link href={postHref(post.slug)}>{post.heading}</Link></h2><p>{post.excerpt}</p><Link className="blog-read" href={postHref(post.slug)}>Read article</Link></div>
         </article>)}
       </div>
     </div>

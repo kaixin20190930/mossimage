@@ -45,6 +45,7 @@ export function PromptShowcaseArticle() {
     </section>
     <section id="build-your-own-prompt">
       <h2>Build your own prompt</h2>
+      <p>The <Link href="/guide/prompt/">moss image prompting guide</Link> explains how to turn these examples into a new scene while keeping exact wording, lighting, and composition consistent.</p>
       <p>Start from the closest example and change one variable: wording, subject, lighting, or layout. Generate once, inspect the result, and then change the next variable. The prompt builder can assemble a new free-form prompt, while the JSON Layout Generator creates a structured template.</p>
       <div className="related-links"><Link href="/guide/prompt/#builder">Open the MOSS Image prompt builder</Link><Link href="/json-layout/">Build a JSON layout</Link><Link href="/presets/infographic/">Try the infographic preset</Link><Link href="/presets/quote-card/">Try the quote-card preset</Link><Link href="/gallery/">Browse all 31 examples</Link></div>
     </section>

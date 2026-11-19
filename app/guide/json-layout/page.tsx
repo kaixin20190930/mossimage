@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EditorialPage } from '@/components/editorial-page';
 import { contentLastModified } from '@/lib/content-dates';
 import { layoutExample } from '@/lib/generation';
+import { featuredImageById, featuredImageHref } from '@/lib/featured-images';
 import { landingPages } from '@/lib/landing-pages';
 import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 const sections = [
   { id: 'definition', title: 'What is a JSON image prompt?' },
   { id: 'example', title: 'Working example' },
+  { id: 'more-examples', title: 'Product and bilingual examples' },
   { id: 'fields', title: 'Field reference' },
   { id: 'bbox', title: 'What a bbox means' },
   { id: 'coordinates', title: 'Centered coordinates' },
@@ -59,7 +61,7 @@ export default function JsonLayoutPage() {
       intro="Describe an image as structured data, give every text or object item an intended region, and open a validated example directly in the online studio."
       sections={sections}
       bottomLink={{ href: '/guide/', label: 'All guides' }}
-      publishedDate="October 23, 2026 · Updated November 8, 2026"
+      publishedDate="October 23, 2026 · Updated November 19, 2026"
     >
       <div className="prompt-guide-start">
         <div><strong>Want a faster starting point?</strong><span>Pick a template, replace its text, and export valid layout JSON.</span></div>
@@ -77,6 +79,25 @@ export default function JsonLayoutPage() {
         <p>This 1024 × 1024 example is accepted by the studio&apos;s JSON Layout validator. It asks for a title in the upper half and a fern in the lower half.</p>
         <div className="code-block"><pre><code>{layoutExample}</code></pre></div>
         <p>Start with two or three large items. Leave space between regions, keep required text short, and change one box at a time when refining the composition.</p>
+      </section>
+
+      <section id="more-examples">
+        <h2>Copy a product layout or bilingual café card</h2>
+        <p>These examples keep the practical starting points from the former blog tutorial together with the field reference. On a 1024 × 1024 canvas, keep each box within −512 to +512.</p>
+        <h3>Product showcase: recorded layout</h3>
+        <p>Two narrow text bands sit above a larger product region. This prompt has a <Link href={featuredImageHref('product-showcase')}>recorded gallery output and saved settings</Link>.</p>
+        <details><summary>Copy the complete product JSON</summary><div className="code-block"><pre><code>{featuredImageById('product-showcase')!.prompt}</code></pre></div></details>
+        <h3>Bilingual café card: editable example</h3>
+        <p>Give each language its own text item. This syntax example is not a newly measured generation.</p>
+        <div className="code-block"><pre><code>{JSON.stringify({
+          summary: { caption: 'A bilingual café menu card on cream paper, minimal typography.' },
+          items: [
+            { label: 'text', caption: 'Top line in Chinese serif lettering', text: '今日特调', bbox: [-380, -420, -240, 420] },
+            { label: 'text', caption: 'English subtitle below the Chinese heading', text: "TODAY'S SPECIAL", bbox: [-200, -380, -80, 380] },
+            { label: 'object', caption: 'A small coffee cup illustration', bbox: [40, -160, 360, 160] },
+          ], bbox_format: 'yxyx', bbox_coord_space: 'abs_centralized',
+        }, null, 2)}</code></pre></div>
+        <p>Keep atmospheric scenes as free-form prompts when exact placement is unnecessary. Use the <Link href="/json-layout/">visual bbox editor</Link> to adjust regions without hand-editing coordinates.</p>
       </section>
 
       <section id="fields">

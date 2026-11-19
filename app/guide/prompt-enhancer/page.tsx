@@ -1,0 +1,24 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { EditorialPage } from '@/components/editorial-page';
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
+import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
+
+const title = 'MOSS-Image Prompt Enhancer — Official Skill & Examples';
+const description = 'Use the official MOSS-Image prompt-enhancer skill for captions and compiled JSON layouts, with a writing example and coordinate cautions.';
+const canonical = 'https://mossimage.run/guide/prompt-enhancer/';
+export const metadata: Metadata = { title, description, alternates: { canonical }, openGraph: { ...defaultOpenGraphImage, title, description, url: canonical, type: 'article' } };
+const sections = [{ id: 'what', title: 'What the enhancer does' }, { id: 'use', title: 'Use the official skill' }, { id: 'example', title: 'Before and after: writing example' }, { id: 'layout', title: 'Layout draft versus model input' }];
+
+export default function PromptEnhancerPage() {
+  return <><JsonLd data={{ '@context': 'https://schema.org', '@graph': [
+    { '@type': 'TechArticle', headline: title, description, datePublished: '2026-11-19', dateModified: '2026-11-19', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC' } },
+    breadcrumbStructuredData([{ name: 'MOSS-Image Generator', url: 'https://mossimage.run/' }, { name: 'Guides', url: 'https://mossimage.run/guide/' }, { name: 'Prompt Enhancer', url: canonical }]),
+  ] }}/><EditorialPage breadcrumbs={[{ label: 'MOSS-Image Generator', href: '/' }, { label: 'Guides', href: '/guide/' }, { label: 'Prompt Enhancer' }]} eyebrow="PROMPT PREPARATION" title="MOSS-Image Prompt Enhancer" intro="Prepare a more specific caption or spatial layout before generating. The official agent skill is separate from this studio’s provider-side prompt expansion." sections={sections} bottomLink={{ href: '/guide/prompt/', label: 'Prompt writing guide' }} publishedDate="November 19, 2026">
+    <section id="what"><h2>What the prompt enhancer does—and does not do</h2><p>OpenMOSS publishes <code>skills/moss-image-prompt-enhancer</code> in its repository. It prepares prompts; it does not generate images. You still need a generation workflow. This site does not install or run that skill for you.</p></section>
+    <section id="use"><h2>Use the official skill</h2><ol><li>Obtain the skill folder from the official repository and install it using your agent&apos;s skill instructions.</li><li>Give the agent your idea, exact visible wording, output format, and canvas. For example:</li></ol><pre><code>{'$moss-image-prompt-enhancer\nCaption for a 1024×1024 coffee poster. Cream paper, brown lettering.\nVisible text exactly: “晨光咖啡” and “MORNING COFFEE”.'}</code></pre><p>For a JSON draft, its bundled compiler runs with Python 3:</p><pre><code>{'python3 /path/to/moss-image-prompt-enhancer/scripts/compile_prompt.py draft.json --output prompt.txt'}</code></pre><p>Replace the placeholder with the installed path. Review the resulting prompt before using it.</p></section>
+    <section id="example"><h2>Before and after: a prompt-writing example</h2><p>This is an illustrative rewrite, not a recorded enhancer run or an image-quality benchmark.</p><h3>Brief</h3><p>A cream and brown coffee poster with “晨光咖啡” and “MORNING COFFEE”.</p><h3>More explicit caption</h3><blockquote>A square coffee poster on warm cream paper. Large dark-brown lettering at the top reads “晨光咖啡”. Below it, a smaller line reads “MORNING COFFEE”. A simple brown cup illustration sits in the lower half, with generous blank space separating it from the wording.</blockquote><p>The rewrite gives each line a place and a visual role. It does not add a made-up address, price, or event date. Compare a rewrite against your original using one fixed seed, then proofread both images.</p></section>
+    <section id="layout"><h2>Do not paste the editable layout draft into the model</h2><p>The skill&apos;s draft uses top-left <code>xyxy</code> pixel boxes plus canvas dimensions. Its compiler produces centered <code>yxyx</code> model input. Keep the generation canvas unchanged; use the compiled output, not the draft.</p><p>Read the <Link href="/guide/json-layout/">JSON bbox layout reference</Link> for the model format. For manual prompting, use the <Link href="/guide/prompt/">MOSS-Image prompting guide</Link>; for this hosted studio, its <Link href="/guide/prompt/#system-prompt">system-prompt explanation</Link> describes the controls actually available here.</p></section>
+    <section className="sources"><h2>Official source</h2><p>Checked November 19, 2026.</p><a href="https://github.com/OpenMOSS/MOSS-Image/tree/main/skills/moss-image-prompt-enhancer" target="_blank" rel="noreferrer">OpenMOSS prompt-enhancer skill and compiler</a></section>
+  </EditorialPage></>;
+}

@@ -25,7 +25,7 @@ export default function JsonLayoutToolPage() {
     url: canonical,
     applicationCategory: 'DesignApplication',
     operatingSystem: 'Web',
-    dateModified: '2026-10-31',
+    dateModified: '2026-11-19',
     isAccessibleForFree: true,
   };
 
@@ -41,7 +41,7 @@ export default function JsonLayoutToolPage() {
     <section className="tool-notes">
       <h2>From regions to a valid layout prompt</h2>
       <p>Boxes use <code>[top, left, bottom, right]</code> order and coordinates measured from the canvas center. Keep regions broad and separate, copy the generated JSON, then test it in Studio before relying on the design.</p>
-      <p>Need field definitions, canvas ranges, working examples, and common errors? Read the <Link href="/blog/json-layout-ai-image-generator-guide/">complete JSON layout syntax guide</Link> or use the shorter <Link href="/guide/json-layout/">field reference</Link>.</p>
+      <p>Need field definitions, canvas ranges, complete examples, and common errors? Read the <Link href="/guide/json-layout/">JSON layout syntax guide</Link>.</p>
     </section>
   </div>;
 }

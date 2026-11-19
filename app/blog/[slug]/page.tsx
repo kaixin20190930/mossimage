@@ -157,7 +157,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       intro={post.excerpt}
       sections={sections}
       bottomLink={{ href: '/blog/', label: 'All articles' }}
-      publishedDate={post.slug === 'moss-image-comfyui-guide' ? `${post.publishedLabel} · Updated November 9, 2026` : post.publishedLabel}
+      publishedDate={post.slug === 'best-moss-image-prompts-examples-seeds' ? `${post.publishedLabel} · Updated November 19, 2026` : post.slug === 'moss-image-comfyui-guide' ? `${post.publishedLabel} · Updated November 9, 2026` : post.publishedLabel}
     >
       <figure className="blog-cover"><div><Image src={post.cover} alt="" fill priority sizes="(max-width: 760px) 100vw, 720px"/></div></figure>
       {contextualLink && <p className="small-note">{contextualLink.note} <Link href={contextualLink.href}>{contextualLink.label}</Link>.</p>}

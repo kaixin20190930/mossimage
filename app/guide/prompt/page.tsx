@@ -39,6 +39,7 @@ const sections = [
   { id: 'builder', title: 'Build a prompt' },
   { id: 'proven', title: 'Proven prompts and writing tips' },
   { id: 'system-prompt', title: 'System prompt and prompt expansion' },
+  { id: 'prompting-tips', title: 'Prompting tips for common revisions' },
   { id: 'complete-prompt', title: 'A complete prompt to copy' },
   { id: 'refine', title: 'Refine a failed text prompt' },
   { id: 'results', title: 'See the prompts as real outputs' },
@@ -125,6 +126,18 @@ export default function PromptGuidePage() {
         <h2>Do you need a MOSS-Image system prompt?</h2>
         <p>This studio accepts an image prompt, not a separate system prompt. Write the subject, medium, layout, and any exact text in the prompt field. In text mode, the hosted endpoint applies prompt expansion; JSON layout mode sends the structured layout without that expansion. You cannot edit the provider&apos;s system instructions here.</p>
         <p>If you use MOSS-Image through your own workflow, keep any system instructions separate from the image description and check what that workflow actually supports. For this studio, put the instructions you control in the image prompt below.</p>
+        <p>Preparing prompts in an agent? The <Link href="/guide/prompt-enhancer/">official MOSS-Image prompt enhancer</Link> can prepare a caption or compile a layout draft. It is a separate preparation tool, not a system-prompt setting in this studio.</p>
+      </section>
+
+      <section id="prompting-tips">
+        <h2>MOSS-Image prompting tips: revise one visible problem</h2>
+        <p>Use this short MOSS prompt guide when a draft is almost right: identify the failed element before rewriting the whole scene.</p>
+        <ul>
+          <li><strong>Text wraps incorrectly:</strong> shorten the wording, specify each line separately, and give the text more space before increasing detail.</li>
+          <li><strong>The scene is crowded:</strong> remove secondary objects and keep one clear subject. Use a layout only when independent placement matters.</li>
+          <li><strong>The style overwhelms the subject:</strong> remove conflicting medium and lighting instructions, then restore them one at a time.</li>
+        </ul>
+        <p>Keep the seed and canvas fixed while comparing revisions. Proofread small lettering, prices, and dates at full size; a clearer request is not a guarantee of correct typography.</p>
       </section>
 
       <section id="complete-prompt">

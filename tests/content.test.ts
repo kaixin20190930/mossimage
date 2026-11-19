@@ -77,6 +77,9 @@ test('sitemap excludes private account routes',()=>{
  assert.ok(!urls.some(url=>url.includes('/account/')));
  assert.equal(new Set(urls).size,urls.length);
  assert.ok(urls.includes('https://mossimage.run/guide/settings/'));
+ assert.ok(urls.includes('https://mossimage.run/guide/prompt-enhancer/'));
+ assert.ok(urls.includes('https://mossimage.run/guide/lora-training/'));
+ assert.ok(!urls.includes('https://mossimage.run/blog/json-layout-ai-image-generator-guide/'));
  assert.ok(urls.includes('https://mossimage.run/guide/turbo-lora/'));
  assert.ok(urls.includes('https://mossimage.run/guide/base-guide/'));
  assert.ok(urls.includes('https://mossimage.run/troubleshooting/'));
@@ -109,7 +112,7 @@ test('topic pages expose contextual bidirectional internal links',()=>{
   ['app/comfyui/mossimagehfloader/page.tsx','/blog/moss-image-comfyui-guide/'],
   ['app/guide/prompt/page.tsx','/blog/best-moss-image-prompts-examples-seeds/'],
   ['app/compare/flux/page.tsx','/blog/moss-image-vs-flux-text-rendering/'],
-  ['app/json-layout/page.tsx','/blog/json-layout-ai-image-generator-guide/'],
+  ['app/json-layout/page.tsx','/guide/json-layout/'],
   ['app/chinese-ai-image-generator/page.tsx','/blog/generate-readable-chinese-text-ai-images/'],
   ['app/presets/[slug]/page.tsx','/blog/best-moss-image-prompts-examples-seeds/'],
   ['app/presets/[slug]/page.tsx','/guide/prompt/'],
@@ -146,7 +149,7 @@ test('image editing guide states the hosted product boundary',()=>{
  assert.doesNotMatch(source,/pixel-exact/);
 });
 
-test('blog publishes six distinct, source-backed long-form pages',()=>{
+test('blog keeps six source-backed records and indexes only canonical destinations',()=>{
  assert.equal(blogPosts.length,6);
  assert.equal(new Set(blogPosts.map(post=>post.slug)).size,6);
  assert.equal(new Set(blogPosts.map(post=>post.title)).size,6);
@@ -158,5 +161,8 @@ test('blog publishes six distinct, source-backed long-form pages',()=>{
  }
  const urls=sitemap().map(entry=>entry.url);
  assert.ok(urls.includes('https://mossimage.run/blog/'));
- for(const post of blogPosts) assert.ok(urls.includes(`https://mossimage.run/blog/${post.slug}/`));
+ for(const post of blogPosts) {
+  const destination=post.slug==='json-layout-ai-image-generator-guide'?'https://mossimage.run/guide/json-layout/':`https://mossimage.run/blog/${post.slug}/`;
+  assert.ok(urls.includes(destination));
+ }
 });

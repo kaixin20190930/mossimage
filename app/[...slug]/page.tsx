@@ -61,6 +61,8 @@ export default async function ContentPage({params}:{params:Promise<{slug:string[
     ] : []),
     ...(path === 'guide' ? [
       { ...landingPages.prompt, category: 'INTERACTIVE TOOL', intro: 'Build a complete prompt from subjects, styles, lighting, visible text, and optional layout guidance.' },
+      { slug: 'guide/prompt-enhancer', heading: 'MOSS-Image Prompt Enhancer', category: 'PROMPT PREPARATION', intro: 'Use the official agent skill to prepare captions and compile layout drafts.' },
+      { slug: 'guide/lora-training', heading: 'MOSS-Image LoRA Training', category: 'COMMUNITY TRAINING', intro: 'Start with KohakuMossTrainer, hardware caveats, cached datasets, and adapter export.' },
       { ...landingPages.jsonLayoutGenerator, category: 'LAYOUT BUILDER', intro: 'Choose a menu, poster, or label template, edit its text, and export valid layout JSON.' },
       { ...landingPages.jsonLayout, category: 'LAYOUT CONTROL', intro: 'Build a structured prompt with documented fields and centered bounding boxes.' },
       { ...landingPages.chinese, category: 'TEXT RENDERING', intro: 'Write Chinese and English text, build bilingual layouts, and proofread generated lettering.' },

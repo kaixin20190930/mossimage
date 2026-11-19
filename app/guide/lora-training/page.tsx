@@ -1,0 +1,29 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { EditorialPage } from '@/components/editorial-page';
+import { defaultOpenGraphImage } from '@/lib/social-metadata';
+import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
+
+const title = 'MOSS-Image LoRA Training — KohakuMossTrainer Guide';
+const description = 'Start MOSS-Image LoRA training with KohakuMossTrainer: VRAM caveats, cached datasets, precision, configuration, and ComfyUI export.';
+const canonical = 'https://mossimage.run/guide/lora-training/';
+export const metadata: Metadata = { title, description, alternates: { canonical }, openGraph: { ...defaultOpenGraphImage, title, description, url: canonical, type: 'article' } };
+const sections = [{ id: 'scope', title: 'Choose the right task' }, { id: 'hardware', title: 'VRAM and precision' }, { id: 'start', title: 'First training run' }, { id: 'export', title: 'Export and compare' }];
+
+export default function LoraTrainingPage() {
+  return <><JsonLd data={{ '@context': 'https://schema.org', '@graph': [
+    { '@type': 'TechArticle', headline: title, description, datePublished: '2026-11-19', dateModified: '2026-11-19', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: 'Moxion Labs LLC' } },
+    breadcrumbStructuredData([{ name: 'MOSS-Image Generator', url: 'https://mossimage.run/' }, { name: 'Guides', url: 'https://mossimage.run/guide/' }, { name: 'LoRA Training', url: canonical }]),
+  ] }}/><EditorialPage breadcrumbs={[{ label: 'MOSS-Image Generator', href: '/' }, { label: 'Guides', href: '/guide/' }, { label: 'LoRA Training' }]} eyebrow="COMMUNITY TRAINING TOOL" title="MOSS-Image LoRA Training with KohakuMossTrainer" intro="A practical starting path for training your own adapter—not a benchmark, a hosted training service, or an official OpenMOSS trainer." sections={sections} bottomLink={{ href: '/guide/', label: 'All guides' }} publishedDate="November 19, 2026">
+    <section id="scope"><h2>Training is different from loading a LoRA</h2><p>Training adapts a checkpoint using your dataset. If you only want faster generation, use the <Link href="/guide/turbo-lora/">Turbo LoRA loading guide</Link>. For reference-image editing, see the <Link href="/moss-image-edit/">Edit LoRA guide</Link>. Neither task requires training your own adapter.</p><p>Before training, choose a checkpoint, collect images you are permitted to use, write accurate captions, and reserve prompts and images for evaluation. Keep your first goal narrow: one visual style or subject is easier to inspect than several unrelated objectives.</p></section>
+    <section id="hardware"><h2>What “6 GB VRAM” actually means</h2><p>The community trainer supports Base/SFT adapter training on Windows and Linux. Its 6 GB profile requires offline text and latent caches, plus memory offloading. Host RAM, disk space, GPU architecture, and the selected workload still matter; 6 GB is not a universal requirement or a guarantee for any configuration.</p><div className="comparison-table-wrap"><table><thead><tr><th>Choice</th><th>Read this before selecting it</th></tr></thead><tbody><tr><th>BF16 / FP16</th><td>Compute options depend on your GPU.</td></tr><tr><th>FP8 / MXFP8 compute</th><td>Architecture-specific; the README lists sm89+ support.</td></tr><tr><th>INT8 / FP8 frozen weights</th><td>Weight-only storage is not the same as compute precision.</td></tr><tr><th>Intel Arc</th><td>Listed as supported but untested; not equivalent to a verified NVIDIA path.</td></tr></tbody></table></div><p>The training profile does not establish the memory requirement of a separate Edit HQ inference pipeline.</p></section>
+    <section id="start"><h2>Configure a first run</h2><p>Follow the maintainer&apos;s platform installation guide, activate its environment, download compatible model components, then run from the trainer repository root. Replace the dataset path:</p><pre><code>{`kohakumoss-doctor
+kohakumoss-config new train --weights ComfyUI/models --data path/to/dataset --name my-lora
+kogine run scripts/data/inspect_data.py --config configs/user/my-lora_data.py
+kogine run scripts/data/cache_text.py --config configs/user/my-lora_data.py
+kogine run scripts/data/cache_latents.py --config configs/user/my-lora_data.py
+kogine run scripts/train/moss.py --config configs/user/my-lora.py`}</code></pre><p>Inspect the generated configuration and data plan before starting. Record the model revision, dataset, memory profile, precision, and seed. Do not assume a copied recipe fits your card.</p></section>
+    <section id="export"><h2>Export for ComfyUI and compare</h2><p>The default export includes a ComfyUI adapter under the run&apos;s <code>export/</code> directory. Load that format with a LoRA loader and its matching model. Preserve the unmodified checkpoint as your baseline.</p><p>Evaluate held-out prompts at the same seed, dimensions, and settings, looking for lost subjects, unwanted styling, or text errors as well as the intended change. Start from the <Link href="/guide/settings/">matching workflow settings</Link>, and save unsuccessful samples too. No training run or hardware test was performed for this guide.</p></section>
+    <section className="sources"><h2>Maintainer documentation</h2><p>Checked November 19, 2026; commands and hardware support can change.</p><a href="https://github.com/KohakuBlueleaf/KohakuMossTrainer" target="_blank" rel="noreferrer">KohakuMossTrainer README, hardware table, and quick start</a><a href="https://github.com/KohakuBlueleaf/KohakuMossTrainer/blob/main/docs/guides/first-lora.md" target="_blank" rel="noreferrer">First LoRA walkthrough</a><a href="https://github.com/KohakuBlueleaf/KohakuMossTrainer/blob/main/docs/guides/install-windows.md" target="_blank" rel="noreferrer">Windows installation and feature matrix</a></section>
+  </EditorialPage></>;
+}

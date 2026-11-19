@@ -62,6 +62,13 @@ test('Workers + SQLite Durable Objects integration (no real provider calls)', as
         assert.equal(response.headers.get('location'), `https://mossimage.run/compare/base-vs-sft/${path.includes('?') ? '?source=search' : ''}`);
       }
     });
+    await t.test('JSON layout article consolidates into the guide preserving queries', async () => {
+      for (const path of ['/blog/json-layout-ai-image-generator-guide', '/blog/json-layout-ai-image-generator-guide/?source=search']) {
+        const response = await mf.dispatchFetch(`https://mossimage.run${path}`, { redirect: 'manual' });
+        assert.equal(response.status, 301);
+        assert.equal(response.headers.get('location'), `https://mossimage.run/guide/json-layout/${path.includes('?') ? '?source=search' : ''}`);
+      }
+    });
     await t.test('obsolete annual URL redirects to pricing', async () => {
       for (const path of ['/year', '/year/?source=search']) {
         const response = await mf.dispatchFetch(`https://mossimage.run${path}`, { redirect: 'manual' });

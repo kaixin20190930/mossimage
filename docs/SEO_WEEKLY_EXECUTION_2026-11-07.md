@@ -44,3 +44,27 @@ Freeze the changed search copy for at least 14 days. Compare complete post-relea
 - Legacy Base/SFT and HTTP URLs: judge the direction of new seven-day impressions, not whether the rolling 28-day history instantly reaches zero.
 
 Do not purchase backlinks during this measurement window. Reconsider only after the non-brand page reaches 100–200 impressions and its target queries stabilize between positions 6 and 15.
+
+## November 19 follow-up release
+
+The November 4–10 (72 clicks / 1,880 impressions) and November 11–17 (46 / 1,620) comparisons are user-supplied, not independently re-fetched in this release. Average positions and a single SERP snapshot do not establish the cause of the decline. The requested “301 not done” claim was contradicted by production: `/guide/base-vs-sft/` already permanently redirects (308) to `/compare/base-vs-sft/`. Preserve that existing consolidation and its internal links rather than reverse it.
+
+Implemented scope:
+
+- Keep the prompt title and builder; add focused revision tips and an official-enhancer explanation. Add contextual, varied-anchor backlinks from settings, turbo, examples, and presets. Do not create redundant near-identical H2 sections just to repeat keywords.
+- Permanently redirect the JSON blog article, with and without trailing slash, to `/guide/json-layout/` using 301 and preserving query strings. Retain product and bilingual copyable examples on the destination. Point discovery links directly to the guide and remove the old article from sitemap. Keep `/json-layout/` a visual bbox editor.
+- Add original-versus-HQ selection and exact v5 format/folder/conditioning mapping to the edit guide. Follow the current model-card recommendation, not a larger version number; do not claim measured quality superiority.
+- Publish `/guide/prompt-enhancer/` and `/guide/lora-training/`, with source links, guide-index entries, sitemap entries, and contextual discovery links. The rewrite example is explicitly illustrative; no image generation or training benchmark is claimed. Explain cached/offloaded 6 GB training, architecture-specific precision, and untested Arc support.
+- No generator, billing, provider, training service, new client interaction, 2K page, or portrait page changes. Turbo recipes and Base/SFT destination remain unchanged.
+- Build prerequisite: patch Next.js 16.4.2 to 16.4.5 for GHSA-mfr8-8qww-v76h and GHSA-vc7v-qv4w-wrv8. The project does not use the affected cache APIs and deploys static assets, but its build security check blocks the old dependency. No framework-major upgrade or cache redesign.
+
+Observation plan (GSC report dates, not converted Beijing calendar days): freeze the content until one complete post-release week exists. Use November 20–26 as the first full seven-day window; review on November 29 Beijing time, only if complete data through November 26 is available. If not, defer the comparison. Compare November 13–19 for the adjacent baseline, explicitly marking the release day as mixed; retain November 11–17 only as historical context, not the adjacent control.
+
+| Metric | Scope and decision rule |
+| --- | --- |
+| Prompt clicks | Exact `/guide/prompt/` page filter, all queries; aspirational seven-day target ≥30. Also show impressions, CTR and impression-weighted query positions for the three specified guide variants. |
+| JSON family | Fixed case-insensitive query filter `json.*(bbox|layout)|(bbox|layout).*json`; page breakdown across former blog, guide, and tool. Target ≥100 guide impressions per complete week, but do not add page-impressions and call them unique searches. Tool-intent impressions remain valid on `/json-layout/`; they need not migrate. |
+| Edit traction | Exact `/moss-image-edit/`, first post-release click, impressions and query breakdown. Zero clicks with very few impressions is inconclusive. |
+| New-page discovery | Each new URL separately: impressions and first impression date; if none, inspect index status, last crawl, selected canonical and internal discovery before suggesting another content change. |
+
+Treat all numbers as targets, not promised outcomes. Historical redirected-URL impressions need not instantly vanish. This release does not create or change a scheduled automation; the dates above are the measurement protocol, not a claim that a reminder was scheduled.

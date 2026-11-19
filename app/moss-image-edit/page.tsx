@@ -6,7 +6,7 @@ import { breadcrumbStructuredData, JsonLd } from '@/lib/structured-data';
 
 const canonical = 'https://mossimage.run/moss-image-edit/';
 const title = 'Can MOSS-Image Edit Images? Files, Nodes & Edit LoRA Guide';
-const description = 'Edit images with MOSS-Image community LoRAs and ComfyUI. Find the correct Edit patch, model folders, text encoder, native nodes, and Ostris requirements.';
+const description = 'Compare chinoll and MOSS-Image Edit HQ v5. Match armV5 files to the LoRA or patch loader, model folders, and edit format in ComfyUI.';
 
 export const metadata: Metadata = {
   title,
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 
 const sections = [
   { id: 'answer', title: 'The short answer' },
+  { id: 'edit-hq', title: 'Original vs Edit HQ v5' },
   { id: 'chinoll', title: 'Moss-Image-Edit LoRA' },
   { id: 'files', title: 'Files and nodes you need' },
   { id: 'native-comfyui', title: 'Native ComfyUI support' },
@@ -36,7 +37,7 @@ export default function MossImageEditPage() {
         headline: 'Can MOSS-Image Edit Images?',
         description,
         datePublished: '2026-10-27',
-        dateModified: '2026-11-08',
+        dateModified: '2026-11-19',
         mainEntityOfPage: canonical,
         author: { '@type': 'Organization', name: 'Moxion Labs LLC', url: 'https://mossimage.run/' },
         publisher: { '@id': 'https://mossimage.run/#organization' },
@@ -57,7 +58,7 @@ export default function MossImageEditPage() {
       intro="MOSS-Image Base and SFT are text-to-image checkpoints, but community Edit LoRAs and current ComfyUI support can add reference-image editing. This guide separates those local workflows from the hosted studio's current capabilities."
       sections={sections}
       bottomLink={{ href: '/workflows/', label: 'Download ComfyUI workflows' }}
-      publishedDate="October 27, 2026 · Updated November 8, 2026"
+      publishedDate="October 27, 2026 · Updated November 19, 2026"
     >
       <section id="answer">
         <h2>The short answer</h2>
@@ -65,8 +66,21 @@ export default function MossImageEditPage() {
           <strong>Yes, through community Edit LoRAs and matching ComfyUI workflows—not through the Base or SFT checkpoint alone.</strong>
           <p>The hosted studio on mossimage.run currently generates new images from text or JSON layout guidance. It does not accept an uploaded image for editing, inpainting, or image-to-image generation.</p>
         </div>
-        <p>The clearest verified route is <a href="https://huggingface.co/chinoll/Moss-Image-Edit" target="_blank" rel="noreferrer">chinoll/Moss-Image-Edit</a>, a community LoRA that works with MOSS-Image Base or SFT. ComfyUI also merged native support for MOSS-Image edit LoRAs on October 22, 2026. These tools can follow a reference image and text instruction, but they remain diffusion-based generation: faces, lettering, textures, and areas outside the intended change can move.</p>
+        <p>Two community options are <a href="https://huggingface.co/chinoll/Moss-Image-Edit" target="_blank" rel="noreferrer">chinoll/Moss-Image-Edit</a> and <a href="https://huggingface.co/akhaliq/MOSS-Image-Edit-HQ" target="_blank" rel="noreferrer">akhaliq/MOSS-Image-Edit-HQ</a>. Choose the adapter and its matching format before importing a workflow. Neither guarantees that faces, lettering, textures, or areas outside the requested change remain unchanged.</p>
         <p>OpenMOSS has said it is exploring reference-related features, but that discussion is not a promise of an official edit checkpoint. Treat community repositories, workflows, and recommended settings as versioned dependencies.</p>
+      </section>
+
+      <section id="edit-hq">
+        <h2>Original Edit LoRA or Edit HQ v5?</h2>
+        <p>Use chinoll for its documented Base/SFT workflows. Choose Edit HQ when evaluating its SFT-trained alternative. The HQ model card currently recommends <code>armV5</code>; v6 remains experimental, not the recommended upgrade. We have not run a head-to-head quality test.</p>
+        <div className="comparison-table-wrap"><table><thead><tr><th>Download</th><th>Folder and loader</th><th>Matching edit format</th></tr></thead><tbody>
+          <tr><th>chinoll: <code>adapter_model.safetensors</code></th><td><code>models/model_patches/</code>; model-patch workflow</td><td><code>Moss-Image-Edit</code></td></tr>
+          <tr><th>HQ native: <code>weights/armV5/armV5.safetensors</code></th><td><code>models/loras/</code>; standard LoRA loader after the diffusion loader</td><td><code>ai-toolkit</code> in Text Encode MOSS-Image Edit</td></tr>
+          <tr><th>HQ converted: <code>armV5-moss-edit-lora.safetensors</code></th><td><code>models/model_patches/</code>; matching Chenkin-x/chinoll-compatible workflow</td><td><code>Moss-Image-Edit</code></td></tr>
+        </tbody></table></div>
+        <p>The two HQ files are formats of the same v5 adapter, not separate quality levels. Start with one reference and SFT; HQ compatibility with Base is unverified. The model card&apos;s native instructions still mention v6 in places: for the recommended checkpoint, select the v5 filename above.</p>
+        <p><strong>Do not swap folders by renaming a file.</strong> Patch weights use the patch loader and <code>model_patches</code>; native ai-toolkit weights use the LoRA loader and <code>loras</code>. Keep the reference-conditioning node aligned.</p>
+        <p>Download the <a href="https://huggingface.co/akhaliq/MOSS-Image-Edit-HQ/tree/main/workflows" target="_blank" rel="noreferrer">HQ v5 plugin workflows</a> for the converted file, or use the current native edit template for the ai-toolkit file. Neither enables uploads in this hosted studio.</p>
       </section>
 
       <section id="chinoll">

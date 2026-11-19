@@ -24,6 +24,10 @@ export default {
       url.pathname = '/compare/base-vs-sft/';
       return Response.redirect(url.href, 308);
     }
+    if (url.pathname === '/blog/json-layout-ai-image-generator-guide' || url.pathname === '/blog/json-layout-ai-image-generator-guide/') {
+      url.pathname = '/guide/json-layout/';
+      return Response.redirect(url.href, 301);
+    }
     if (url.pathname === '/year' || url.pathname === '/year/') {
       url.pathname = '/pricing/';
       return Response.redirect(url.href, 308);
